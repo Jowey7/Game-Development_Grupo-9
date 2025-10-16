@@ -1,9 +1,8 @@
 <!-- Config file for the engine -->
-
 <config>
   <engine>
     <title>My platformer game</title>
-    <maxFrameDuration value="16"/>
+    <targetFrameRate value="60"/>
   </engine>
 
   <render>
@@ -17,36 +16,4 @@
     <resizable value="false"/>
     <fullscreen_window value="false"/>
   </window>
-
-  <scene>
-    <map path="Assets/Maps/" name="iso.tmx"/>
-    <entities>
-      <player x="96" y="96" w="64" h ="64" texture="Assets/Textures/isometric.png" gravity="false">
-        <animations>
-          <idle loop="true" speed ="0.5">
-            <frame x="512" y="512" w="64" h="64"/>
-          </idle>
-        </animations>
-      </player>
-      <items>
-        <item name="coin" x="128" y="128" w="64" h="64" texture="Assets/Textures/isometric.png" gravity="false">
-          <animations>
-            <idle loop="true" speed ="0.5">
-              <frame x="320" y="384" w="64" h="64"/>
-            </idle>
-          </animations>
-        </item>
-        <item name="coin" x="128" y="250" w="64" h="64" texture="Assets/Textures/isometric.png" gravity="false">
-          <animations>
-            <idle loop="true" speed ="0.1">
-              <frame x="512" y="640" w="64" h="64"/>
-              <frame x="576" y="640" w="64" h="64"/>
-              <frame x="640" y="640" w="64" h="64"/>
-            </idle>
-          </animations>
-        </item>
-      </items>
-    </entities>
-  </scene>
-	
 </config>

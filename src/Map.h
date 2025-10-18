@@ -135,7 +135,6 @@ public:
     std::string mapFileName;
     std::string mapPath;
 
-    // SOLUCIÓN: Movemos mapData a la sección pública
     MapData mapData;
 
 private:

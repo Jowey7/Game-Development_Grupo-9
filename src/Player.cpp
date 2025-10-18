@@ -19,20 +19,23 @@ Player::Player() : Entity(EntityType::PLAYER)
 Player::~Player() {}
 
 bool Player::Awake() {
-	position = Vector2D(150, 600);
+	position = Vector2D(150, 300); // Ajustada la posición inicial Y para que no empiece en el suelo
 	initialPosition = position;
 	return true;
 }
 
 bool Player::Start() {
-	texture = Engine::GetInstance().textures->Load("Assets/Textures/player1.png");
+	// Se corrige la ruta de la textura del jugador
+	texture = Engine::GetInstance().textures->Load("Assets/Player1/player1.png");
+
+	// Nota: La textura HP.png no se encuentra en "Assets/Textures/". El programa no fallará, pero no se verá.
 	HP = Engine::GetInstance().textures->Load("Assets/Textures/HP.png");
 
 	Engine::GetInstance().textures->GetSize(texture, texW, texH);
 	pbody = Engine::GetInstance().physics->CreateCircle((int)position.getX(), (int)position.getY(), texW / 2, bodyType::DYNAMIC);
 	pbody->listener = this;
 	pbody->ctype = ColliderType::PLAYER;
-	pbody->body = pbody->body; // Asignación para evitar warnings
+	pbody->body = pbody->body;
 
 	pickCoinFxId = Engine::GetInstance().audio->LoadFx("Assets/Audio/Fx/coin-collision-sound-342335.wav");
 
@@ -47,9 +50,6 @@ bool Player::Update(float dt)
 
 	Physics* physics = Engine::GetInstance().physics.get();
 
-	// --- LÓGICA DE MOVIMIENTO Y SALTO CORREGIDA ---
-
-	// 1. Controlamos el movimiento horizontal
 	float desiredVelX = 0;
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT) {
 		desiredVelX = -5.0f;
@@ -59,14 +59,11 @@ bool Player::Update(float dt)
 	}
 	physics->SetXVelocity(pbody, desiredVelX);
 
-	// 2. Controlamos el salto de forma independiente
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN && !isJumping) {
-		// Reseteamos la velocidad vertical para un salto consistente y aplicamos el impulso
 		physics->SetYVelocity(pbody, 0);
 		physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
 		isJumping = true;
 	}
-	// --- FIN DE LA CORRECCIÓN ---
 
 	int x, y;
 	pbody->GetPosition(x, y);

@@ -2,6 +2,7 @@
 
 #include "Module.h"
 #include "Player.h"
+#include <vector>
 
 struct SDL_Texture;
 
@@ -36,4 +37,6 @@ private:
 
 	std::shared_ptr<Player> player;
 
+	// Se reemplaza la textura única por un vector para manejar múltiples capas
+	std::vector<SDL_Texture*> backgroundTextures;
 };

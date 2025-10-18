@@ -119,7 +119,7 @@ bool Engine::Update() {
 	return ret;
 }
 
-// ... (PreUpdate, DoUpdate, PostUpdate y otras funciones se mantienen igual)
+// ... (CleanUp y otras funciones se mantienen igual)
 // ... (Omito el resto por brevedad, no tienen cambios)
 
 bool Engine::CleanUp() {
@@ -161,6 +161,7 @@ void Engine::FinishUpdate() {
 }
 
 bool Engine::PreUpdate() {
+	render->Clear(); // <--- SE LLAMA A CLEAR() AQUÍ
 	for (const auto& module : moduleList) {
 		if (module->active && !module->PreUpdate()) return false;
 	}

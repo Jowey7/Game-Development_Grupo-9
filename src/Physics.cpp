@@ -13,7 +13,7 @@
 Physics::Physics() : Module()
 {
     world = b2_nullWorldId;
-    debug = true; // toggle with F1
+    debug = false; // toggle with F1
 }
 
 // Destructor

@@ -7,6 +7,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// ... (El constructor y otras funciones no cambian)
 Render::Render() : Module()
 {
 	name = "render";
@@ -68,10 +69,13 @@ bool Render::Start()
 
 bool Render::PreUpdate()
 {
-	// SOLUCIÓN GAME OVER: Establecemos el color de fondo ANTES de limpiar la pantalla
+	return true;
+}
+
+void Render::Clear()
+{
 	SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
 	SDL_RenderClear(renderer);
-	return true;
 }
 
 bool Render::Update(float dt)
@@ -81,7 +85,6 @@ bool Render::Update(float dt)
 
 bool Render::PostUpdate()
 {
-	// Ahora solo nos encargamos de presentar la imagen final
 	SDL_RenderPresent(renderer);
 	return true;
 }
@@ -98,9 +101,6 @@ void Render::SetBackgroundColor(SDL_Color color)
 	background = color;
 }
 
-// ... (El resto del archivo Render.cpp se mantiene igual)
-// ... (DrawTexture, DrawRectangle, etc. no necesitan cambios)
-
 void Render::SetViewPort(const SDL_Rect& rect)
 {
 	SDL_SetRenderViewport(renderer, &rect);
@@ -111,7 +111,8 @@ void Render::ResetViewPort()
 	SDL_SetRenderViewport(renderer, &viewport);
 }
 
-bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* section, float speed, double angle, int pivotX, int pivotY) const
+// Se actualiza la firma de la función y se añade la lógica para el reescalado
+bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* section, float speed, double angle, int pivotX, int pivotY, int width, int height) const
 {
 	bool ret = true;
 	int scale = Engine::GetInstance().window->GetScale();
@@ -120,7 +121,13 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	rect.x = (float)((int)(camera.x * speed) + x * scale);
 	rect.y = (float)((int)(camera.y * speed) + y * scale);
 
-	if (section != NULL)
+	// Si se especifica un ancho y alto, se usan para escalar la textura
+	if (width > 0 && height > 0)
+	{
+		rect.w = (float)width;
+		rect.h = (float)height;
+	}
+	else if (section != NULL)
 	{
 		rect.w = (float)(section->w * scale);
 		rect.h = (float)(section->h * scale);
@@ -167,6 +174,7 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	return ret;
 }
 
+// ... (El resto del archivo Render.cpp se mantiene igual)
 bool Render::DrawRectangle(const SDL_Rect& rect, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool filled, bool use_camera) const
 {
 	bool ret = true;

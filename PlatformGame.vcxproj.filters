@@ -81,7 +81,7 @@
     <ClCompile Include="src\Item.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
-    <ClCompile Include="GameOverScene.cpp">
+    <ClCompile Include="src\GameOverScene.cpp">
       <Filter>Source Files\Game</Filter>
     </ClCompile>
   </ItemGroup>
@@ -140,7 +140,7 @@
     <ClInclude Include="src\Item.h">
       <Filter>Source Files\Game</Filter>
     </ClInclude>
-    <ClInclude Include="GameOverScene.h">
+    <ClInclude Include="src\GameOverScene.h">
       <Filter>Source Files\Game</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,6 +3,7 @@
 #include "Render.h"
 #include "Window.h"
 
+
 GameOverScene::GameOverScene() : Module()
 {
     name = "gameover";
@@ -18,15 +19,15 @@ bool GameOverScene::Update(float dt)
     // Fondo negro
     Engine::GetInstance().render->SetBackgroundColor({ 0, 0, 0, 255 });
 
-    // Dibuja el texto "Game Over" si tienes función de texto
-    // Engine::GetInstance().render->DrawString("Game Over", centerX, centerY, {255,0,0,255});
+    // Si tienes función para dibujar texto, dibuja "Game Over" aquí.
+
 
     return true;
 }
 
 bool GameOverScene::PostUpdate()
 {
-    // Puedes manejar input para reiniciar o salir aquí
+    // Aquí puedes manejar input para reiniciar o salir si lo deseas
     return true;
 }
 

@@ -14,7 +14,6 @@
 #include <iomanip>
 
 Engine::Engine() {
-	// ... (el constructor se mantiene igual)
 	LOG("Constructor Engine::Engine");
 	frames = 0;
 	startupTime.Start();
@@ -55,7 +54,6 @@ void Engine::AddModule(std::shared_ptr<Module> module) {
 }
 
 bool Engine::Awake() {
-	// ... (la función Awake se mantiene igual)
 	LOG("Engine::Awake");
 	LoadConfig();
 	gameTitle = configFile.child("config").child("engine").child("title").child_value();
@@ -69,7 +67,6 @@ bool Engine::Awake() {
 }
 
 bool Engine::Start() {
-	// ... (la función Start se mantiene igual)
 	LOG("Engine::Start");
 	for (const auto& module : moduleList) {
 		if (module->active && !module->Start()) return false;
@@ -86,7 +83,6 @@ bool Engine::Update() {
 	if (ret) ret = PostUpdate();
 	FinishUpdate();
 
-	// Realiza el cambio de escena de forma segura al final del fotograma
 	if (sceneToLoad != nullptr) {
 		if (currentScene) {
 			currentScene->CleanUp();
@@ -94,21 +90,20 @@ bool Engine::Update() {
 		}
 
 		currentScene = sceneToLoad;
-		sceneToLoad = nullptr; // Limpiamos la solicitud
+		sceneToLoad = nullptr;
 
-		// Inicializamos la nueva escena
 		bool found = false;
 		for (auto& module : moduleList) {
 			if (module == currentScene) {
 				found = true;
-				module->Init(); // Reactivamos si ya existía
+				module->Init();
 				break;
 			}
 		}
 
 		if (!found) {
 			auto it = moduleList.end();
-			--it; // Apunta a render
+			--it;
 			moduleList.insert(it, currentScene);
 			currentScene->Init();
 		}
@@ -118,9 +113,6 @@ bool Engine::Update() {
 
 	return ret;
 }
-
-// ... (CleanUp y otras funciones se mantienen igual)
-// ... (Omito el resto por brevedad, no tienen cambios)
 
 bool Engine::CleanUp() {
 	LOG("Engine::CleanUp");
@@ -161,7 +153,7 @@ void Engine::FinishUpdate() {
 }
 
 bool Engine::PreUpdate() {
-	render->Clear(); // <--- SE LLAMA A CLEAR() AQUÍ
+	render->StartFrame();
 	for (const auto& module : moduleList) {
 		if (module->active && !module->PreUpdate()) return false;
 	}
@@ -191,7 +183,6 @@ bool Engine::LoadConfig() {
 	return true;
 }
 
-// Implementación de la nueva función para solicitar el cambio de escena
 void Engine::RequestSceneChange(std::shared_ptr<Module> newScene) {
 	sceneToLoad = newScene;
 }

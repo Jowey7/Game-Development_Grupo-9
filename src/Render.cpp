@@ -7,7 +7,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-// ... (El constructor y otras funciones no cambian)
 Render::Render() : Module()
 {
 	name = "render";
@@ -24,10 +23,7 @@ bool Render::Awake()
 	LOG("Create SDL rendering context");
 	bool ret = true;
 
-	int scale = Engine::GetInstance().window->GetScale();
-	SDL_Window* window = Engine::GetInstance().window->window;
-
-	renderer = SDL_CreateRenderer(window, nullptr);
+	renderer = SDL_CreateRenderer(Engine::GetInstance().window->window, nullptr);
 
 	if (renderer == NULL)
 	{
@@ -48,8 +44,13 @@ bool Render::Awake()
 			}
 		}
 
-		camera.w = Engine::GetInstance().window->width * scale;
-		camera.h = Engine::GetInstance().window->height * scale;
+		nativeWidth = Engine::GetInstance().window->width;
+		nativeHeight = Engine::GetInstance().window->height;
+
+		renderTarget = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, nativeWidth, nativeHeight);
+
+		camera.w = nativeWidth;
+		camera.h = nativeHeight;
 		camera.x = 0;
 		camera.y = 0;
 	}
@@ -72,8 +73,9 @@ bool Render::PreUpdate()
 	return true;
 }
 
-void Render::Clear()
+void Render::StartFrame()
 {
+	SDL_SetRenderTarget(renderer, renderTarget);
 	SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
 	SDL_RenderClear(renderer);
 }
@@ -85,6 +87,24 @@ bool Render::Update(float dt)
 
 bool Render::PostUpdate()
 {
+	SDL_SetRenderTarget(renderer, NULL);
+
+	int windowW, windowH;
+	SDL_GetWindowSize(Engine::GetInstance().window->window, &windowW, &windowH);
+
+	float scale = fmin((float)windowW / nativeWidth, (float)windowH / nativeHeight);
+
+	SDL_FRect destRect;
+	destRect.w = nativeWidth * scale;
+	destRect.h = nativeHeight * scale;
+	destRect.x = (windowW - destRect.w) / 2.0f;
+	destRect.y = (windowH - destRect.h) / 2.0f;
+
+	SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+	SDL_RenderClear(renderer);
+
+	SDL_RenderTexture(renderer, renderTarget, NULL, &destRect);
+
 	SDL_RenderPresent(renderer);
 	return true;
 }
@@ -92,7 +112,8 @@ bool Render::PostUpdate()
 bool Render::CleanUp()
 {
 	LOG("Destroying SDL render");
-	SDL_DestroyRenderer(renderer);
+	if (renderTarget) SDL_DestroyTexture(renderTarget);
+	if (renderer) SDL_DestroyRenderer(renderer);
 	return true;
 }
 
@@ -111,7 +132,6 @@ void Render::ResetViewPort()
 	SDL_SetRenderViewport(renderer, &viewport);
 }
 
-// Se actualiza la firma de la función y se añade la lógica para el reescalado
 bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* section, float speed, double angle, int pivotX, int pivotY, int width, int height) const
 {
 	bool ret = true;
@@ -121,7 +141,6 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	rect.x = (float)((int)(camera.x * speed) + x * scale);
 	rect.y = (float)((int)(camera.y * speed) + y * scale);
 
-	// Si se especifica un ancho y alto, se usan para escalar la textura
 	if (width > 0 && height > 0)
 	{
 		rect.w = (float)width;
@@ -174,7 +193,6 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 	return ret;
 }
 
-// ... (El resto del archivo Render.cpp se mantiene igual)
 bool Render::DrawRectangle(const SDL_Rect& rect, Uint8 r, Uint8 g, Uint8 b, Uint8 a, bool filled, bool use_camera) const
 {
 	bool ret = true;

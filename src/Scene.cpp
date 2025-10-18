@@ -33,30 +33,25 @@ bool Scene::Awake()
 
 bool Scene::Start()
 {
-	// Activamos el módulo del mapa al iniciar la escena
 	Engine::GetInstance().map->active = true;
 	Engine::GetInstance().audio->PlayMusic("Assets/Audio/Music/level-iv-339695.wav");
 	Engine::GetInstance().map->Load("Assets/Background/", "Swamp_Map.tmx");
 
-	// Cargamos todas las capas del fondo en orden
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer1.png"));
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer2.png"));
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer3.png"));
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer4.png"));
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer5.png"));
 
-	// --- CREACIÓN DE LÍMITES LATERALES ---
 	Map* map = Engine::GetInstance().map.get();
 	Physics* physics = Engine::GetInstance().physics.get();
 
 	int mapWidth = map->mapData.width * map->mapData.tileWidth;
 	int mapHeight = map->mapData.height * map->mapData.tileHeight;
 
-	// Pared izquierda
 	PhysBody* leftWall = physics->CreateRectangle(-10, mapHeight / 2, 20, mapHeight, STATIC);
 	leftWall->ctype = ColliderType::PLATFORM;
 
-	// Pared derecha
 	PhysBody* rightWall = physics->CreateRectangle(mapWidth + 10, mapHeight / 2, 20, mapHeight, STATIC);
 	rightWall->ctype = ColliderType::PLATFORM;
 
@@ -65,14 +60,9 @@ bool Scene::Start()
 
 bool Scene::PreUpdate()
 {
-	// --- AJUSTES DE CAPAS ---
-	// Velocidades de parallax
 	float parallaxSpeeds[] = { 0.1f, 0.25f, 0.4f, 0.6f, 0.8f };
-	// Desplazamientos verticales (positivo = más abajo)
 	int yOffsets[] = { -200, -200, -200, 40, -15 }; // <--- ¡MODIFICA ESTOS VALORES!
-	// Factores de escala (1.0 = tamaño original, 1.2 = 20% más grande, 0.8 = 20% más pequeño)
-	float scaleFactors[] = { 2.0f, 1.3f, 1.3f, 1.0f, 1.0f }; // <--- ¡MODIFICA ESTOS VALORES!
-
+	float scaleFactors[] = { 2.0f, 1.3f, 1.3f, 1.0f, 1.0f };
 
 	for (size_t i = 0; i < backgroundTextures.size(); ++i)
 	{
@@ -86,12 +76,11 @@ bool Scene::PreUpdate()
 			int originalBgW, originalBgH;
 			textures->GetSize(texture, originalBgW, originalBgH);
 
-			// Aplicamos el factor de escala
 			int scaledBgW = (int)(originalBgW * scaleFactors[i]);
 			int scaledBgH = (int)(originalBgH * scaleFactors[i]);
 
 			int mapHeightPixels = map->mapData.height * map->mapData.tileHeight;
-			int backgroundY = mapHeightPixels - scaledBgH; // Usamos la altura escalada para la posición
+			int backgroundY = mapHeightPixels - scaledBgH;
 
 			if (render->camera.y > 0) {
 				backgroundY += (int)(render->camera.y * (1.0f - parallaxSpeeds[i]));
@@ -100,12 +89,10 @@ bool Scene::PreUpdate()
 			backgroundY += yOffsets[i];
 
 			int mapWidthPixels = map->mapData.width * map->mapData.tileWidth;
-			// Aseguramos que el mosaico no tenga huecos si la imagen es muy pequeña
 			int numTiles = (scaledBgW > 0) ? (mapWidthPixels / scaledBgW) + 2 : 1;
 
 			for (int j = 0; j < numTiles; ++j)
 			{
-				// Pasamos el nuevo tamaño a la función de dibujado
 				render->DrawTexture(texture, j * scaledBgW, backgroundY, NULL, parallaxSpeeds[i], 0, INT_MAX, INT_MAX, scaledBgW, scaledBgH);
 			}
 		}
@@ -159,7 +146,7 @@ bool Scene::PostUpdate()
 		}
 	}
 
-	return ret;
+	return true;
 }
 
 bool Scene::CleanUp()

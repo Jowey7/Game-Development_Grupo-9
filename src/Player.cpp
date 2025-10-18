@@ -22,30 +22,24 @@ Player::~Player() {
 }
 
 bool Player::Awake() {
-
-	//L03: TODO 2: Initialize Player parameters
-	position = Vector2D(96, 96);
+	// POSICIÓN DE INICIO SEGURA Y VISIBLE
+	position = Vector2D(150, 600);
 	initialPosition = position;
 	return true;
 }
 
-bool Player::Start() {
+// ... El resto del archivo Player.cpp se mantiene como te lo pasé en el mensaje anterior ...
+// (Lo omito por brevedad, ya que la única corrección crítica es la de Engine.cpp y la posición en Awake)
 
-	//L03: TODO 2: Initialize Player parameters
+bool Player::Start() {
 	texture = Engine::GetInstance().textures->Load("Assets/Textures/player1.png");
 	HP = Engine::GetInstance().textures->Load("Assets/Textures/HP.png");
 
-	// L08 TODO 5: Add physics to the player - initialize physics body
 	Engine::GetInstance().textures->GetSize(texture, texW, texH);
 	pbody = Engine::GetInstance().physics->CreateCircle((int)position.getX(), (int)position.getY(), texW / 2, bodyType::DYNAMIC);
-
-	// L08 TODO 6: Assign player class (using "this") to the listener of the pbody. This makes the Physics module to call the OnCollision method
 	pbody->listener = this;
-
-	// L08 TODO 7: Assign collider type
 	pbody->ctype = ColliderType::PLAYER;
 
-	//initialize audio effect
 	pickCoinFxId = Engine::GetInstance().audio->LoadFx("Assets/Audio/Fx/coin-collision-sound-342335.wav");
 
 	return true;
@@ -53,58 +47,53 @@ bool Player::Start() {
 
 bool Player::Update(float dt)
 {
+	if (respawnCooldown > 0.0f) {
+		respawnCooldown -= dt / 1000.0f;
+	}
+
 	Physics* physics = Engine::GetInstance().physics.get();
 
-	// Read current velocity
 	b2Vec2 velocity = physics->GetLinearVelocity(pbody);
-	velocity = { 0, velocity.y }; // Reset horizontal velocity
+	velocity.x = 0;
 
-	// Move left/right
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT) {
-		velocity.x = -0.2f * 16.0f;
+		velocity.x = -5.0f;
 	}
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT) {
-		velocity.x = 0.2f * 16.0f;
+		velocity.x = 5.0f;
 	}
 
-	// Jump (impulse once)
-	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN && isJumping == false) {
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN && !isJumping) {
 		physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
 		isJumping = true;
 	}
 
-	// Preserve vertical speed while jumping
-	if (isJumping == true) {
-		velocity.y = physics->GetYVelocity(pbody);
-	}
+	physics->SetLinearVelocity(pbody, velocity.x, velocity.y);
 
-	// Apply velocity via helper
-	physics->SetLinearVelocity(pbody, velocity);
-
-	// Update render position using your PhysBody helper
 	int x, y;
 	pbody->GetPosition(x, y);
 	position.setX((float)x);
 	position.setY((float)y);
 
 	Engine::GetInstance().render->DrawTexture(texture, x - texW / 2, y - texH / 2);
-	if (position.getY() > Engine::GetInstance().window->height + texH)
+
+	if (position.getY() > Engine::GetInstance().window->height + texH && respawnCooldown <= 0.0f)
 	{
 		Respawn();
 	}
 
-	// Remaining Lives
+	// Dibuja las vidas restantes
 	int spacing = 5;
 	int startX = 20;
 	int startY = 40;
-
 	int iconW = 0, iconH = 0;
-	Engine::GetInstance().textures->GetSize(HP, iconW, iconH);
-
-	for (int i = 0; i < lives; ++i)
-	{
-		int x = startX + i * (iconW + spacing);
-		Engine::GetInstance().render->DrawTexture(HP, x, startY - iconH / 2);
+	if (HP) {
+		Engine::GetInstance().textures->GetSize(HP, iconW, iconH);
+		for (int i = 0; i < lives; ++i)
+		{
+			int xPos = startX + i * (iconW + spacing);
+			Engine::GetInstance().render->DrawTexture(HP, xPos, startY, NULL, 0.0f);
+		}
 	}
 
 	return true;
@@ -113,18 +102,19 @@ bool Player::Update(float dt)
 bool Player::CleanUp()
 {
 	LOG("Cleanup player");
-	Engine::GetInstance().textures->UnLoad(texture);
-	Engine::GetInstance().textures->UnLoad(HP);
+	if (texture) Engine::GetInstance().textures->UnLoad(texture);
+	if (HP) Engine::GetInstance().textures->UnLoad(HP);
+	if (pbody != nullptr) {
+		Engine::GetInstance().physics->DeletePhysBody(pbody);
+		pbody = nullptr;
+	}
 	return true;
 }
 
-// L08 TODO 6: Define OnCollision function for the player. 
 void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 	switch (physB->ctype)
 	{
 	case ColliderType::PLATFORM:
-		LOG("Collision PLATFORM");
-		//reset the jump flag when touching the ground
 		isJumping = false;
 		break;
 	case ColliderType::ITEM:
@@ -142,20 +132,7 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 
 void Player::OnCollisionEnd(PhysBody* physA, PhysBody* physB)
 {
-	switch (physB->ctype)
-	{
-	case ColliderType::PLATFORM:
-		LOG("End Collision PLATFORM");
-		break;
-	case ColliderType::ITEM:
-		LOG("End Collision ITEM");
-		break;
-	case ColliderType::UNKNOWN:
-		LOG("End Collision UNKNOWN");
-		break;
-	default:
-		break;
-	}
+	// No se necesita acción aquí por ahora
 }
 
 void Player::Respawn()
@@ -166,12 +143,12 @@ void Player::Respawn()
 		Engine::GetInstance().physics->SetPosition(pbody, initialPosition.getX(), initialPosition.getY());
 		Engine::GetInstance().physics->SetLinearVelocity(pbody, 0.0f, 0.0f);
 		isJumping = false;
+		respawnCooldown = 1.0f;
 		LOG("Vidas restantes: %d", lives);
 	}
 	else
 	{
 		LOG("¡Game Over! El jugador se ha quedado sin vidas.");
-		// Cambia la escena activa a GameOverScene
 		Engine::GetInstance().SetCurrentScene(std::make_shared<GameOverScene>());
 	}
 }

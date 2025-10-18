@@ -3,6 +3,8 @@
 #include "Module.h"
 #include <list>
 #include <vector>
+#include "Vector2D.h"
+#include "SDL3/SDL.h"
 
 // L09: TODO 5: Add attributes to the property structure
 struct Properties
@@ -89,10 +91,10 @@ struct TileSet
 // L06: TODO 1: Create a struct needed to hold the information to Map node
 struct MapData
 {
-	int width;
-	int height;
-	int tileWidth;
-	int tileHeight;
+    int width;
+    int height;
+    int tileWidth;
+    int tileHeight;
     std::list<TileSet*> tilesets;
 
     // L07: TODO 2: Add the info to the MapLayer Struct
@@ -123,21 +125,19 @@ public:
     // Load new map
     bool Load(std::string path, std::string mapFileName);
 
-    // L07: TODO 8: Create a method that translates x,y coordinates from map positions to world positions
     Vector2D MapToWorld(int i, int j) const;
 
-    // L09: TODO 2: Implement function to the Tileset based on a tile id
     TileSet* GetTilesetFromTileId(int gid) const;
 
-    // L09: TODO 6: Load a group of properties 
     bool LoadProperties(pugi::xml_node& node, Properties& properties);
 
-public: 
+public:
     std::string mapFileName;
     std::string mapPath;
 
+    // SOLUCIÓN: Movemos mapData a la sección pública
+    MapData mapData;
+
 private:
     bool mapLoaded;
-    // L06: DONE 1: Declare a variable data of the struct MapData
-    MapData mapData;
 };

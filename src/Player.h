@@ -11,7 +11,7 @@ class Player : public Entity
 public:
 
 	Player();
-	
+
 	virtual ~Player();
 
 	bool Awake();
@@ -22,29 +22,31 @@ public:
 
 	bool CleanUp();
 
-	// L08 TODO 6: Define OnCollision function for the player. 
+	// LÍNEA CORREGIDA
 	void OnCollision(PhysBody* physA, PhysBody* physB);
 	void OnCollisionEnd(PhysBody* physA, PhysBody* physB);
+
+	void Respawn();
 
 public:
 
 	//Declare player parameters
 	float speed = 5.0f;
 	SDL_Texture* texture = NULL;
-	SDL_Texture* HP = nullptr;
-	int lives = 3;
+	SDL_Texture* HP = NULL;
 
 	int texW, texH;
 
 	//Audio fx
 	int pickCoinFxId;
 
-	// L08 TODO 5: Add physics to the player - declare a Physics body
 	PhysBody* pbody;
-	float jumpForce = 2.5f; // The force to apply when jumping
-	bool isJumping = false; // Flag to check if the player is currently jumping
+	float jumpForce = 2.5f;
+	bool isJumping = false;
 
-	//Respawn utilities
+	int lives = 3;
 	Vector2D initialPosition;
-	void Respawn();
+
+private:
+	float respawnCooldown = 0.0f; // Temporizador para evitar bucles de muerte
 };

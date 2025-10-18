@@ -55,7 +55,7 @@ bool Scene::PreUpdate()
 	// Desplazamientos verticales (positivo = más abajo)
 	int yOffsets[] = { -200, -200, -200, 40, -15 }; // <--- ¡MODIFICA ESTOS VALORES!
 	// Factores de escala (1.0 = tamaño original, 1.2 = 20% más grande, 0.8 = 20% más pequeño)
-	float scaleFactors[] = { 2.0f, 1.0f, 1.0f, 1.0f, 1.0f }; // <--- ¡MODIFICA ESTOS VALORES!
+	float scaleFactors[] = { 2.0f, 1.3f, 1.3f, 1.0f, 1.0f }; // <--- ¡MODIFICA ESTOS VALORES!
 
 
 	for (size_t i = 0; i < backgroundTextures.size(); ++i)

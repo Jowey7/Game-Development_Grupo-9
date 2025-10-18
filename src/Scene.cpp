@@ -58,6 +58,9 @@ bool Scene::PreUpdate()
 // Called each loop iteration
 bool Scene::Update(float dt)
 {
+	// Actualiza el jugador
+	if (player) player->Update(dt);
+
 	////L03 TODO 3: Make the camera movement independent of framerate
 	//float camSpeed = 1;
 

@@ -473,3 +473,14 @@ void Physics::DrawSolidCapsuleStub(b2Vec2, b2Vec2, float, b2HexColor, void*) {}
 void Physics::DrawPointStub(b2Vec2, float, b2HexColor, void*) {}
 void Physics::DrawStringStub(b2Vec2, const char*, b2HexColor, void*) {}
 void Physics::DrawTransformStub(b2Transform, void*) {}
+
+void Physics::SetPosition(PhysBody* p, float x, float y) const
+{
+    b2Vec2 pos = { PIXEL_TO_METERS(x), PIXEL_TO_METERS(y) };
+
+    b2Transform currentTransform = b2Body_GetTransform(p->body);
+
+    float angle = b2Rot_GetAngle(currentTransform.q);
+
+    b2Body_SetTransform(p->body, pos, b2MakeRot(angle));
+}

@@ -17,17 +17,17 @@
 // Constructor
 Engine::Engine() {
 
-	LOG("Constructor Engine::Engine");
+    LOG("Constructor Engine::Engine");
 
     // L2: TODO 3: Measure the amount of ms that takes to execute the Engine constructor and LOG the result
-	Timer timer = Timer();
+    Timer timer = Timer();
     startupTime = Timer();
     frameTime = PerfTimer();
     lastSecFrameTime = PerfTimer();
     frames = 0;
 
     // L4: TODO 1: Add the EntityManager Module to the Engine
-    
+
     // Modules
     window = std::make_shared<Window>();
     input = std::make_shared<Input>();
@@ -46,7 +46,6 @@ Engine::Engine() {
     AddModule(std::static_pointer_cast<Module>(input));
     AddModule(std::static_pointer_cast<Module>(textures));
     AddModule(std::static_pointer_cast<Module>(audio));
-    // L08: TODO 2: Add Physics module
     AddModule(std::static_pointer_cast<Module>(physics));
     AddModule(std::static_pointer_cast<Module>(map));
     AddModule(std::static_pointer_cast<Module>(scene));
@@ -55,8 +54,12 @@ Engine::Engine() {
     // Render last 
     AddModule(std::static_pointer_cast<Module>(render));
 
+    // ===== CORRECCIÓN =====
+    // Se han eliminado las llamadas a currentScene->Awake() y currentScene->Start() de aquí.
+    // El motor se encargará de llamarlas en el momento adecuado.
+
     // L2: TODO 3: Log the result of the timer
-	LOG("Timer App Constructor: %f", timer.ReadMSec());
+    LOG("Timer App Constructor: %f", timer.ReadMSec());
 }
 
 // Static method to get the instance of the Engine class, following the singleton pattern
@@ -65,7 +68,7 @@ Engine& Engine::GetInstance() {
     return instance;
 }
 
-void Engine::AddModule(std::shared_ptr<Module> module){
+void Engine::AddModule(std::shared_ptr<Module> module) {
     module->Init();
     moduleList.push_back(module);
 }
@@ -88,16 +91,16 @@ bool Engine::Awake() {
     bool result = true;
     for (const auto& module : moduleList) {
         // L05: TODO 4: Call the LoadParameters function for each module
-		module->LoadParameters(configFile.child("config").child(module.get()->name.c_str()));
-        result =  module->Awake();
+        module->LoadParameters(configFile.child("config").child(module.get()->name.c_str()));
+        result = module->Awake();
 
         if (!result) {
-			break;
-		}
+            break;
+        }
     }
 
     // L2: TODO 3: Log the result of the timer
-	LOG("Timer App Awake(): %f", timer.ReadMSec());
+    LOG("Timer App Awake(): %f", timer.ReadMSec());
 
     return result;
 }
@@ -120,8 +123,8 @@ bool Engine::Start() {
     }
 
     // L2: TODO 3: Log the result of the timer
-	LOG("Timer App CleanUp(): %f", timer.ReadMSec());
-	
+    LOG("Timer App CleanUp(): %f", timer.ReadMSec());
+
     return result;
 }
 
@@ -134,6 +137,9 @@ bool Engine::Update() {
     if (input->GetWindowEvent(WE_QUIT) == true)
         ret = false;
 
+    // ===== CORRECCIÓN =====
+    // Se ha restaurado el bucle de actualización original.
+    // Ahora se actualizan TODOS los módulos, no solo la escena.
     if (ret == true)
         ret = PreUpdate();
 
@@ -165,7 +171,7 @@ bool Engine::CleanUp() {
     }
 
     // L2: TODO 3: Log the result of the timer
-	LOG("Timer App CleanUp(): %f", timer.ReadMSec());
+    LOG("Timer App CleanUp(): %f", timer.ReadMSec());
 
     return result;
 }
@@ -181,7 +187,7 @@ void Engine::FinishUpdate()
 {
     // L03: TODO 1: Cap the framerate of the gameloop
     double currentDt = frameTime.ReadMs();
-	float maxFrameDuration = 1000.0f / targetFrameRate;
+    float maxFrameDuration = 1000.0f / targetFrameRate;
     if (targetFrameRate > 0 && currentDt < maxFrameDuration) {
         Uint32 delay = (Uint32)(maxFrameDuration - currentDt);
 
@@ -192,8 +198,8 @@ void Engine::FinishUpdate()
         //LOG("We waited for %I32u ms and got back in %f ms",delay,delayTimer.ReadMs()); // Uncomment this line to see the results
     }
 
-	// L2: TODO 4: Calculate:
-	
+    // L2: TODO 4: Calculate:
+
     // Amount of frames since startup
     frameCount++;
 
@@ -296,5 +302,3 @@ bool Engine::LoadConfig()
 
     return ret;
 }
-
-

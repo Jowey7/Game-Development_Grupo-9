@@ -16,7 +16,6 @@ class Audio;
 class Scene;
 class EntityManager;
 class Map;
-//L08 TODO 2: Add Physics module
 class Physics;
 
 class Engine
@@ -28,6 +27,9 @@ public:
 
 	//	
 	void AddModule(std::shared_ptr<Module> module);
+
+	// Public method to set the actual scene (gameplay, game over...)
+	void SetCurrentScene(std::shared_ptr<Module> newScene);
 
 	// Called before render is available
 	bool Awake();
@@ -95,6 +97,7 @@ public:
 	std::shared_ptr<Textures> textures;
 	std::shared_ptr<Audio> audio;
 	std::shared_ptr<Scene> scene;
+	std::shared_ptr<Module> currentScene;
 	// L04: TODO 1: Add the EntityManager Module to the Engine
 	std::shared_ptr<EntityManager> entityManager;
 	std::shared_ptr<Map> map;

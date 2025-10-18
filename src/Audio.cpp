@@ -217,3 +217,11 @@ bool Audio::PlayFx(int id, int repeat) {
 
     return true;
 }
+
+void Audio::StopMusic()
+{
+    if (music_stream_) {
+        SDL_ClearAudioStream(music_stream_);
+        FreeSound(music_data_);
+    }
+}

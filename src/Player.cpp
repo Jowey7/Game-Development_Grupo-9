@@ -143,6 +143,7 @@ void Player::Respawn()
 	else
 	{
 		LOG("¡Game Over! El jugador se ha quedado sin vidas.");
+		Engine::GetInstance().audio->StopMusic();
 		Engine::GetInstance().RequestSceneChange(std::make_shared<GameOverScene>());
 	}
 }

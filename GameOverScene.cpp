@@ -20,8 +20,7 @@ bool GameOverScene::Update(float dt)
     Engine::GetInstance().render->SetBackgroundColor({ 0, 0, 0, 255 });
 
     // Si tienes función para dibujar texto, dibuja "Game Over" aquí.
-    // Ejemplo:
-    // Engine::GetInstance().render->DrawString("Game Over", 200, 200, {255,0,0,255});
+
 
     return true;
 }

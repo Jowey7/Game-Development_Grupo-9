@@ -33,6 +33,9 @@ public:
 	// Play a previously loaded WAV
 	bool PlayFx(int fx, int repeat = 0);
 
+    //Stop the currently played WAV
+    void StopMusic();
+
 private:
 
     struct SoundData {

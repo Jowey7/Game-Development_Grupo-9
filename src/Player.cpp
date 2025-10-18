@@ -11,25 +11,18 @@
 #include "Window.h"
 #include "GameOverScene.h"
 
-
 Player::Player() : Entity(EntityType::PLAYER)
 {
 	name = "Player";
 }
 
-Player::~Player() {
-
-}
+Player::~Player() {}
 
 bool Player::Awake() {
-	// POSICIÓN DE INICIO SEGURA Y VISIBLE
 	position = Vector2D(150, 600);
 	initialPosition = position;
 	return true;
 }
-
-// ... El resto del archivo Player.cpp se mantiene como te lo pasé en el mensaje anterior ...
-// (Lo omito por brevedad, ya que la única corrección crítica es la de Engine.cpp y la posición en Awake)
 
 bool Player::Start() {
 	texture = Engine::GetInstance().textures->Load("Assets/Textures/player1.png");
@@ -39,6 +32,7 @@ bool Player::Start() {
 	pbody = Engine::GetInstance().physics->CreateCircle((int)position.getX(), (int)position.getY(), texW / 2, bodyType::DYNAMIC);
 	pbody->listener = this;
 	pbody->ctype = ColliderType::PLAYER;
+	pbody->body = pbody->body; // Asignación para evitar warnings
 
 	pickCoinFxId = Engine::GetInstance().audio->LoadFx("Assets/Audio/Fx/coin-collision-sound-342335.wav");
 
@@ -53,22 +47,26 @@ bool Player::Update(float dt)
 
 	Physics* physics = Engine::GetInstance().physics.get();
 
-	b2Vec2 velocity = physics->GetLinearVelocity(pbody);
-	velocity.x = 0;
+	// --- LÓGICA DE MOVIMIENTO Y SALTO CORREGIDA ---
 
+	// 1. Controlamos el movimiento horizontal
+	float desiredVelX = 0;
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT) {
-		velocity.x = -5.0f;
+		desiredVelX = -5.0f;
 	}
-	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT) {
-		velocity.x = 5.0f;
+	else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT) {
+		desiredVelX = 5.0f;
 	}
+	physics->SetXVelocity(pbody, desiredVelX);
 
+	// 2. Controlamos el salto de forma independiente
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN && !isJumping) {
+		// Reseteamos la velocidad vertical para un salto consistente y aplicamos el impulso
+		physics->SetYVelocity(pbody, 0);
 		physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
 		isJumping = true;
 	}
-
-	physics->SetLinearVelocity(pbody, velocity.x, velocity.y);
+	// --- FIN DE LA CORRECCIÓN ---
 
 	int x, y;
 	pbody->GetPosition(x, y);
@@ -82,10 +80,9 @@ bool Player::Update(float dt)
 		Respawn();
 	}
 
-	// Dibuja las vidas restantes
 	int spacing = 5;
 	int startX = 20;
-	int startY = 40;
+	int startY = 20;
 	int iconW = 0, iconH = 0;
 	if (HP) {
 		Engine::GetInstance().textures->GetSize(HP, iconW, iconH);
@@ -130,10 +127,7 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 	}
 }
 
-void Player::OnCollisionEnd(PhysBody* physA, PhysBody* physB)
-{
-	// No se necesita acción aquí por ahora
-}
+void Player::OnCollisionEnd(PhysBody* physA, PhysBody* physB) {}
 
 void Player::Respawn()
 {
@@ -149,6 +143,6 @@ void Player::Respawn()
 	else
 	{
 		LOG("¡Game Over! El jugador se ha quedado sin vidas.");
-		Engine::GetInstance().SetCurrentScene(std::make_shared<GameOverScene>());
+		Engine::GetInstance().RequestSceneChange(std::make_shared<GameOverScene>());
 	}
 }

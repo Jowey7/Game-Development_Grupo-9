@@ -30,7 +30,8 @@ public:
 	bool Update();
 	bool CleanUp();
 
-	void SetCurrentScene(std::shared_ptr<Module> newScene);
+	// Renombramos la función para que solo solicite el cambio
+	void RequestSceneChange(std::shared_ptr<Module> newScene);
 
 	float GetDt() const { return dt; }
 
@@ -65,6 +66,7 @@ public:
 
 private:
 	std::shared_ptr<Module> currentScene;
+	std::shared_ptr<Module> sceneToLoad = nullptr; // Variable para la escena solicitada
 
 	float dt;
 	int frames;

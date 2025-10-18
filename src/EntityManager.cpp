@@ -13,34 +13,30 @@ EntityManager::EntityManager() : Module()
 
 // Destructor
 EntityManager::~EntityManager()
-{}
+{
+}
 
 // Called before render is available
 bool EntityManager::Awake()
 {
 	LOG("Loading Entity Manager");
 	bool ret = true;
-
-	//Iterates over the entities and calls the Awake
-	for(const auto entity : entities)
-	{
-		if (entity->active == false) continue;
-		ret = entity->Awake();
-	}
-
 	return ret;
-
 }
 
 bool EntityManager::Start() {
 
-	bool ret = true; 
+	bool ret = true;
 
 	//Iterates over the entities and calls Start
-	for(const auto entity : entities)
+	for (const auto& entity : entities)
 	{
 		if (entity->active == false) continue;
-		ret = entity->Start();
+		if (!entity->Start())
+		{
+			ret = false;
+			break;
+		}
 	}
 
 	return ret;
@@ -49,24 +45,21 @@ bool EntityManager::Start() {
 // Called before quitting
 bool EntityManager::CleanUp()
 {
-	bool ret = true;
-
-	for(const auto entity : entities)
+	LOG("Cleaning up Entity Manager");
+	for (const auto& entity : entities)
 	{
-		if (entity->active == false) continue;
-		ret = entity->CleanUp();
+		entity->CleanUp();
 	}
 
 	entities.clear();
 
-	return ret;
+	return true;
 }
 
 std::shared_ptr<Entity> EntityManager::CreateEntity(EntityType type)
 {
-	std::shared_ptr<Entity> entity = std::make_shared<Entity>();
+	std::shared_ptr<Entity> entity;
 
-	//L04: TODO 3a: Instantiate entity according to the type and add the new entity to the list of Entities
 	switch (type)
 	{
 	case EntityType::PLAYER:
@@ -79,29 +72,40 @@ std::shared_ptr<Entity> EntityManager::CreateEntity(EntityType type)
 		break;
 	}
 
-	entities.push_back(entity);
+	// SOLUCIÓN: Llamamos a Awake() justo después de crear la entidad.
+	if (entity) {
+		entities.push_back(entity);
+		entity->Awake();
+	}
 
 	return entity;
 }
 
 void EntityManager::DestroyEntity(std::shared_ptr<Entity> entity)
 {
-	entity->CleanUp();
-	entities.remove(entity);
+	if (entity != nullptr)
+	{
+		entity->CleanUp();
+		entities.remove(entity);
+	}
 }
 
 void EntityManager::AddEntity(std::shared_ptr<Entity> entity)
 {
-	if ( entity != nullptr) entities.push_back(entity);
+	if (entity != nullptr) entities.push_back(entity);
 }
 
 bool EntityManager::Update(float dt)
 {
 	bool ret = true;
-	for(const auto entity : entities)
+	for (const auto& entity : entities)
 	{
 		if (entity->active == false) continue;
-		ret = entity->Update(dt);
+		if (!entity->Update(dt))
+		{
+			ret = false;
+			break;
+		}
 	}
 	return ret;
 }

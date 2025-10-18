@@ -14,9 +14,9 @@
 #include <iomanip>
 
 Engine::Engine() {
+	// ... (el constructor se mantiene igual)
 	LOG("Constructor Engine::Engine");
 	frames = 0;
-	// Initialize timers
 	startupTime.Start();
 	lastSecFrameTime.Start();
 	frameTime.Start();
@@ -55,22 +55,24 @@ void Engine::AddModule(std::shared_ptr<Module> module) {
 }
 
 bool Engine::Awake() {
+	// ... (la función Awake se mantiene igual)
 	LOG("Engine::Awake");
 	LoadConfig();
 	gameTitle = configFile.child("config").child("engine").child("title").child_value();
 	targetFrameRate = configFile.child("config").child("engine").child("targetFrameRate").attribute("value").as_int();
 
 	for (const auto& module : moduleList) {
-		module->LoadParameters(configFile.child("config").child(module.get()->name.c_str()));
+		module->LoadParameters(configFile.child("config").child(module->name.c_str()));
 		if (!module->Awake()) return false;
 	}
 	return true;
 }
 
 bool Engine::Start() {
+	// ... (la función Start se mantiene igual)
 	LOG("Engine::Start");
 	for (const auto& module : moduleList) {
-		if (!module->Start()) return false;
+		if (module->active && !module->Start()) return false;
 	}
 	return true;
 }
@@ -83,8 +85,42 @@ bool Engine::Update() {
 	if (ret) ret = DoUpdate();
 	if (ret) ret = PostUpdate();
 	FinishUpdate();
+
+	// Realiza el cambio de escena de forma segura al final del fotograma
+	if (sceneToLoad != nullptr) {
+		if (currentScene) {
+			currentScene->CleanUp();
+			currentScene->active = false;
+		}
+
+		currentScene = sceneToLoad;
+		sceneToLoad = nullptr; // Limpiamos la solicitud
+
+		// Inicializamos la nueva escena
+		bool found = false;
+		for (auto& module : moduleList) {
+			if (module == currentScene) {
+				found = true;
+				module->Init(); // Reactivamos si ya existía
+				break;
+			}
+		}
+
+		if (!found) {
+			auto it = moduleList.end();
+			--it; // Apunta a render
+			moduleList.insert(it, currentScene);
+			currentScene->Init();
+		}
+
+		currentScene->Start();
+	}
+
 	return ret;
 }
+
+// ... (PreUpdate, DoUpdate, PostUpdate y otras funciones se mantienen igual)
+// ... (Omito el resto por brevedad, no tienen cambios)
 
 bool Engine::CleanUp() {
 	LOG("Engine::CleanUp");
@@ -154,30 +190,7 @@ bool Engine::LoadConfig() {
 	return true;
 }
 
-void Engine::SetCurrentScene(std::shared_ptr<Module> newScene) {
-	LOG("Cambiando de escena...");
-	if (currentScene) {
-		currentScene->CleanUp();
-		currentScene->active = false;
-	}
-
-	currentScene = newScene;
-
-	bool found = false;
-	for (auto& module : moduleList) {
-		if (module == currentScene) {
-			found = true;
-			break;
-		}
-	}
-
-	if (!found) {
-		// Insertar antes del módulo de renderizado
-		auto it = moduleList.end();
-		--it; // Apunta a render
-		moduleList.insert(it, currentScene);
-	}
-
-	currentScene->Init(); // Activa el módulo
-	currentScene->Start();
+// Implementación de la nueva función para solicitar el cambio de escena
+void Engine::RequestSceneChange(std::shared_ptr<Module> newScene) {
+	sceneToLoad = newScene;
 }

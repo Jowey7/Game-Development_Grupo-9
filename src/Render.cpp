@@ -16,12 +16,8 @@ Render::Render() : Module()
 	background.a = 0;
 }
 
-// Destructor
-Render::~Render()
-{
-}
+Render::~Render() {}
 
-// Called before render is available
 bool Render::Awake()
 {
 	LOG("Create SDL rendering context");
@@ -30,9 +26,6 @@ bool Render::Awake()
 	int scale = Engine::GetInstance().window->GetScale();
 	SDL_Window* window = Engine::GetInstance().window->window;
 
-	//L05 TODO 5 - Load the configuration of the Render module
-	
-	// SDL3: no flags; create default renderer and set vsync separately
 	renderer = SDL_CreateRenderer(window, nullptr);
 
 	if (renderer == NULL)
@@ -63,11 +56,9 @@ bool Render::Awake()
 	return ret;
 }
 
-// Called before the first frame
 bool Render::Start()
 {
 	LOG("render start");
-	// back background
 	if (!SDL_GetRenderViewport(renderer, &viewport))
 	{
 		LOG("SDL_GetRenderViewport failed: %s", SDL_GetError());
@@ -75,9 +66,10 @@ bool Render::Start()
 	return true;
 }
 
-// Called each loop iteration
 bool Render::PreUpdate()
 {
+	// SOLUCIÓN GAME OVER: Establecemos el color de fondo ANTES de limpiar la pantalla
+	SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
 	SDL_RenderClear(renderer);
 	return true;
 }
@@ -89,12 +81,11 @@ bool Render::Update(float dt)
 
 bool Render::PostUpdate()
 {
-	SDL_SetRenderDrawColor(renderer, background.r, background.g, background.b, background.a);
+	// Ahora solo nos encargamos de presentar la imagen final
 	SDL_RenderPresent(renderer);
 	return true;
 }
 
-// Called before quitting
 bool Render::CleanUp()
 {
 	LOG("Destroying SDL render");
@@ -107,6 +98,9 @@ void Render::SetBackgroundColor(SDL_Color color)
 	background = color;
 }
 
+// ... (El resto del archivo Render.cpp se mantiene igual)
+// ... (DrawTexture, DrawRectangle, etc. no necesitan cambios)
+
 void Render::SetViewPort(const SDL_Rect& rect)
 {
 	SDL_SetRenderViewport(renderer, &rect);
@@ -117,13 +111,11 @@ void Render::ResetViewPort()
 	SDL_SetRenderViewport(renderer, &viewport);
 }
 
-// Blit to screen
 bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* section, float speed, double angle, int pivotX, int pivotY) const
 {
 	bool ret = true;
 	int scale = Engine::GetInstance().window->GetScale();
 
-	// SDL3 uses float rects for rendering
 	SDL_FRect rect;
 	rect.x = (float)((int)(camera.x * speed) + x * scale);
 	rect.y = (float)((int)(camera.y * speed) + y * scale);
@@ -165,7 +157,6 @@ bool Render::DrawTexture(SDL_Texture* texture, int x, int y, const SDL_Rect* sec
 		p = &pivot;
 	}
 
-	// SDL3: returns bool; map to int-style check
 	int rc = SDL_RenderTextureRotated(renderer, texture, src, &rect, angle, p, SDL_FLIP_NONE) ? 0 : -1;
 	if (rc != 0)
 	{

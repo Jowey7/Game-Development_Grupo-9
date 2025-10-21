@@ -19,7 +19,7 @@ Player::Player() : Entity(EntityType::PLAYER)
 Player::~Player() {}
 
 bool Player::Awake() {
-	position = Vector2D(150, 300); // Ajustada la posición inicial Y para que no empiece en el suelo
+	position = Vector2D(60, 280); // Ajustada la posición inicial Y para que no empiece en el suelo		Poner las flags (checkpoints) un tile antes del pj
 	initialPosition = position;
 	return true;
 }

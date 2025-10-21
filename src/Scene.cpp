@@ -1,4 +1,4 @@
-#include "Engine.h"
+﻿#include "Engine.h"
 #include "Input.h"
 #include "Textures.h"
 #include "Audio.h"
@@ -23,16 +23,20 @@ Scene::~Scene() {}
 bool Scene::Awake()
 {
 	LOG("Loading Scene");
-	player = std::dynamic_pointer_cast<Player>(Engine::GetInstance().entityManager->CreateEntity(EntityType::PLAYER));
-
-	std::shared_ptr<Item> item = std::dynamic_pointer_cast<Item>(Engine::GetInstance().entityManager->CreateEntity(EntityType::ITEM));
-	item->position = Vector2D(200, 350);
-
+	// La creación del jugador y los ítems se ha movido a Start() para permitir el reinicio del juego.
 	return true;
 }
 
 bool Scene::Start()
 {
+	// --- Creación de Entidades ---
+	// Se crea el jugador y los ítems aquí para asegurar que aparezcan cada vez que la escena se inicie.
+	player = std::dynamic_pointer_cast<Player>(Engine::GetInstance().entityManager->CreateEntity(EntityType::PLAYER));
+
+	std::shared_ptr<Item> item = std::dynamic_pointer_cast<Item>(Engine::GetInstance().entityManager->CreateEntity(EntityType::ITEM));
+	item->position = Vector2D(200, 350);
+	// ---------------------------
+
 	Engine::GetInstance().map->active = true;
 	Engine::GetInstance().audio->PlayMusic("Assets/Audio/Music/level-iv-339695.wav");
 	Engine::GetInstance().map->Load("Assets/Background/", "Swamp_Map.tmx");
@@ -61,7 +65,7 @@ bool Scene::Start()
 bool Scene::PreUpdate()
 {
 	float parallaxSpeeds[] = { 0.1f, 0.25f, 0.4f, 0.6f, 0.8f };
-	int yOffsets[] = { -200, -200, -200, 40, -15 }; // <--- �MODIFICA ESTOS VALORES!
+	int yOffsets[] = { -200, -200, -200, 40, -15 }; // <--- ﹐ODIFICA ESTOS VALORES!
 	float scaleFactors[] = { 2.0f, 1.3f, 1.3f, 1.0f, 1.0f };
 
 	for (size_t i = 0; i < backgroundTextures.size(); ++i)

@@ -72,10 +72,10 @@ std::shared_ptr<Entity> EntityManager::CreateEntity(EntityType type)
 		break;
 	}
 
-	// SOLUCIÓN: Llamamos a Awake() justo después de crear la entidad.
 	if (entity) {
 		entities.push_back(entity);
 		entity->Awake();
+		entity->Start(); // <-- CORRECCIÓN APLICADA AQUÍ
 	}
 
 	return entity;

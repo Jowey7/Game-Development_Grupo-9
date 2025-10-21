@@ -210,7 +210,7 @@ bool Physics::PostUpdate()
             dd.DrawSolidCircleFcn = &Physics::DrawSolidCircleCb;
 
             // Defensive stubs (prevent nullptr calls inside Box2D)
-            dd.DrawSolidCapsuleFcn = &Physics::DrawSolidCapsuleStub; // correct 3.1 signature (p1,p2,radius,...) :contentReference[oaicite:1]{index=1}
+            dd.DrawSolidCapsuleFcn = &Physics::DrawSolidCapsuleStub; // correct 3.1 signature (p1,p2,radius,...)
             dd.DrawPointFcn = &Physics::DrawPointStub;
             dd.DrawStringFcn = &Physics::DrawStringStub;
             dd.DrawTransformFcn = &Physics::DrawTransformStub;
@@ -221,12 +221,16 @@ bool Physics::PostUpdate()
 
     // Process bodies to delete after the world step
     for (PhysBody* physBody : bodiesToDelete) {
-        b2DestroyBody(physBody->body);
+        if (physBody != nullptr) {
+            b2DestroyBody(physBody->body);
+            delete physBody; // <-- CORRECCIÓN APLICADA AQUÍ
+        }
     }
     bodiesToDelete.clear();
 
     return ret;
 }
+
 
 // Called before quitting
 bool Physics::CleanUp()
@@ -279,7 +283,7 @@ void Physics::EndContact(b2ShapeId shapeA, b2ShapeId shapeB)
 
 void Physics::DeletePhysBody(PhysBody* physBody)
 {
-	if (B2_IS_NULL(world)) return; // world already destroyed
+    if (B2_IS_NULL(world)) return; // world already destroyed
     if (physBody && !B2_IS_NULL(physBody->body) && physBody->listener->active)
     {
         // Don’t change contact/sensor flags here (can mismatch event buffers).

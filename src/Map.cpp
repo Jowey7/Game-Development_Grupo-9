@@ -137,7 +137,7 @@ bool Map::Load(std::string path, std::string fileName)
         }
 
         for (const auto& mapLayer : mapData.layers) {
-            if (mapLayer->name == "Capa de patrones 1") {
+            if (mapLayer->name == "Level-Layer") {
                 for (int i = 0; i < mapData.height; i++) {
                     for (int j = 0; j < mapData.width; j++) {
                         int gid = mapLayer->Get(i, j);

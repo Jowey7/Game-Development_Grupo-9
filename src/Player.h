@@ -7,7 +7,7 @@
 
 struct SDL_Texture;
 
-// Enum simplificado para los estados
+// Enum para los estados del jugador
 enum class PlayerState
 {
 	IDLE,
@@ -35,14 +35,20 @@ private:
 public:
 	PlayerState currentState;
 
-	// Texturas para cada animación
+	// Texturas del jugador
 	SDL_Texture* idleTexture = nullptr;
 	SDL_Texture* runTexture = nullptr;
 	SDL_Texture* jumpTexture = nullptr;
 	SDL_Texture* currentTexture = nullptr;
 	SDL_Texture* HP = nullptr;
 
-	// Animaciones
+	// --- Variables para el efecto de salto ---
+	SDL_Texture* jumpEffectTexture = nullptr;
+	Animation jumpEffectAnim;
+	bool showJumpEffect = false;
+	Vector2D jumpEffectPosition;
+
+	// Animaciones del jugador
 	Animation idleAnim;
 	Animation runAnim;
 	Animation jumpAnim;
@@ -51,7 +57,7 @@ public:
 
 	// Físicas y estado
 	PhysBody* pbody;
-	float jumpForce = 2.0f;
+	float jumpForce = 2.1f;
 	bool isJumping = false;
 	int lives = 3;
 	Vector2D initialPosition;

@@ -143,6 +143,9 @@
     <ClInclude Include="src\GameOverScene.h">
       <Filter>Source Files\Game</Filter>
     </ClInclude>
+    <ClInclude Include="src\Animation.h">
+      <Filter>Source Files\Utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Xml Include="config.xml">

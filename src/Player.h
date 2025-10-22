@@ -3,50 +3,62 @@
 #include "Entity.h"
 #include <box2d/box2d.h>
 #include <SDL3/SDL.h>
+#include "Animation.h"
 
 struct SDL_Texture;
+
+// Enum simplificado para los estados
+enum class PlayerState
+{
+	IDLE,
+	RUN,
+	JUMP
+};
 
 class Player : public Entity
 {
 public:
-
 	Player();
-
 	virtual ~Player();
 
 	bool Awake();
-
 	bool Start();
-
 	bool Update(float dt);
-
 	bool CleanUp();
 
-	// LÍNEA CORREGIDA
 	void OnCollision(PhysBody* physA, PhysBody* physB);
-	void OnCollisionEnd(PhysBody* physA, PhysBody* physB);
-
 	void Respawn();
 
+private:
+	void SetState(PlayerState state);
+
 public:
+	PlayerState currentState;
 
-	//Declare player parameters
-	float speed = 5.0f;
-	SDL_Texture* texture = NULL;
-	SDL_Texture* HP = NULL;
+	// Texturas para cada animación
+	SDL_Texture* idleTexture = nullptr;
+	SDL_Texture* runTexture = nullptr;
+	SDL_Texture* jumpTexture = nullptr;
+	SDL_Texture* currentTexture = nullptr;
+	SDL_Texture* HP = nullptr;
 
-	int texW, texH;
+	// Animaciones
+	Animation idleAnim;
+	Animation runAnim;
+	Animation jumpAnim;
+	Animation* currentAnimation = nullptr;
+	bool flip = false;
 
-	//Audio fx
-	int pickCoinFxId;
-
+	// Físicas y estado
 	PhysBody* pbody;
-	float jumpForce = 2.5f;
+	float jumpForce = 2.0f;
 	bool isJumping = false;
-
 	int lives = 3;
 	Vector2D initialPosition;
 
+	// Fx de audio
+	int pickCoinFxId;
+
 private:
-	float respawnCooldown = 0.0f; // Temporizador para evitar bucles de muerte
+	float respawnCooldown = 0.0f;
 };

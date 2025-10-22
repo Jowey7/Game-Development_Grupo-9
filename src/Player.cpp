@@ -12,7 +12,6 @@
 #include "GameOverScene.h"
 #include "Map.h"
 
-// Dimensiones del sprite original para dibujarlo en pantalla
 const int PLAYER_RENDER_WIDTH = 32;
 const int PLAYER_RENDER_HEIGHT = 32;
 
@@ -31,8 +30,10 @@ bool Player::Awake() {
 }
 
 bool Player::Start() {
+	// Carga de texturas
 	idleTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_idle.png");
-	runTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_walk.png");
+	walkTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_walk.png");
+	sprintTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_run.png");
 	jumpTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_jump.png");
 	jumpEffectTexture = Engine::GetInstance().textures->Load("Assets/Player1/p1_jump_ef.png");
 	HP = Engine::GetInstance().textures->Load("Assets/Objects/HP.png");
@@ -44,10 +45,15 @@ bool Player::Start() {
 	idleAnim.speed = 0.1f;
 	idleAnim.loop = true;
 
-	// RUN (6 frames de 32x32)
-	for (int i = 0; i < 6; ++i) runAnim.frames.push_back({ i * 32, 0, 32, 32 });
-	runAnim.speed = 0.2f;
-	runAnim.loop = true;
+	// WALK (6 frames de 32x32)
+	for (int i = 0; i < 6; ++i) walkAnim.frames.push_back({ i * 32, 0, 32, 32 });
+	walkAnim.speed = 0.2f;
+	walkAnim.loop = true;
+
+	// SPRINT (6 frames de 32x32)
+	for (int i = 0; i < 6; ++i) sprintAnim.frames.push_back({ i * 32, 0, 32, 32 });
+	sprintAnim.speed = 0.3f; // Un poco más rápida que caminar
+	sprintAnim.loop = true;
 
 	// JUMP (8 frames de 32x32)
 	for (int i = 0; i < 8; ++i) jumpAnim.frames.push_back({ i * 32, 0, 32, 32 });
@@ -61,7 +67,6 @@ bool Player::Start() {
 
 	SetState(PlayerState::IDLE);
 
-	// Collider circular
 	pbody = Engine::GetInstance().physics->CreateCircle((int)position.getX(), (int)position.getY(), PLAYER_RENDER_WIDTH / 2, bodyType::DYNAMIC);
 	pbody->listener = this;
 	pbody->ctype = ColliderType::PLAYER;
@@ -83,9 +88,13 @@ void Player::SetState(PlayerState state)
 		currentAnimation = &idleAnim;
 		currentTexture = idleTexture;
 		break;
-	case PlayerState::RUN:
-		currentAnimation = &runAnim;
-		currentTexture = runTexture;
+	case PlayerState::WALK:
+		currentAnimation = &walkAnim;
+		currentTexture = walkTexture;
+		break;
+	case PlayerState::SPRINT:
+		currentAnimation = &sprintAnim;
+		currentTexture = sprintTexture;
 		break;
 	case PlayerState::JUMP:
 		currentAnimation = &jumpAnim;
@@ -100,43 +109,70 @@ bool Player::Update(float dt)
 	if (respawnCooldown > 0.0f) respawnCooldown -= dt / 1000.0f;
 
 	Physics* physics = Engine::GetInstance().physics.get();
-	float desiredVelX = 0;
+	float desiredVelX = 0.0f;
 
 	// --- LÓGICA DE MOVIMIENTO ---
-	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
-	{
-		desiredVelX = -5.0f;
-		flip = true;
-	}
-	else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
-	{
-		desiredVelX = 5.0f;
-		flip = false;
-	}
 
-	// --- GESTIÓN DE ESTADOS Y SALTO ---
 	if (isJumping)
 	{
+		// 1. EL JUGADOR ESTÁ EN EL AIRE
 		SetState(PlayerState::JUMP);
+
+		// Lee el input horizontal, pero la velocidad está limitada por airSpeedLimit
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
+		{
+			desiredVelX = -airSpeedLimit;
+			flip = true;
+		}
+		else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+		{
+			desiredVelX = airSpeedLimit;
+			flip = false;
+		}
 	}
 	else
 	{
-		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
-		{
-			physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
-			isJumping = true;
-			SetState(PlayerState::JUMP);
+		// 2. EL JUGADOR ESTÁ EN EL SUELO
+		bool isSprinting = (Engine::GetInstance().input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_REPEAT);
+		bool isMoving = false;
 
-			// --- POSICIÓN DEL EFECTO CORREGIDA ---
-			showJumpEffect = true;
-			jumpEffectPosition.setX(position.getX() - (PLAYER_RENDER_WIDTH / 2)); // Centra el efecto horizontalmente
-			jumpEffectPosition.setY(position.getY() + (PLAYER_RENDER_HEIGHT / 2) - 32); // Lo alinea con los pies
-			jumpEffectAnim.Reset();
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
+		{
+			desiredVelX = isSprinting ? -sprintSpeed : -walkSpeed;
+			flip = true;
+			isMoving = true;
+		}
+		else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+		{
+			desiredVelX = isSprinting ? sprintSpeed : walkSpeed;
+			flip = false;
+			isMoving = true;
+		}
+
+		// Establecer estado en el suelo
+		if (isMoving)
+		{
+			SetState(isSprinting ? PlayerState::SPRINT : PlayerState::WALK);
 		}
 		else
 		{
-			if (desiredVelX != 0) SetState(PlayerState::RUN);
-			else SetState(PlayerState::IDLE);
+			SetState(PlayerState::IDLE);
+		}
+
+		// Comprobar si salta
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+		{
+			// Guarda la velocidad máxima que tendrá en el aire
+			airSpeedLimit = isMoving ? (isSprinting ? sprintSpeed : walkSpeed) : walkSpeed;
+
+			physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
+			isJumping = true;
+			SetState(PlayerState::JUMP);
+			// Activa y posiciona el efecto de salto
+			showJumpEffect = true;
+			jumpEffectPosition.setX(position.getX() - (PLAYER_RENDER_WIDTH / 2));
+			jumpEffectPosition.setY(position.getY() + (PLAYER_RENDER_HEIGHT / 2) - 32);
+			jumpEffectAnim.Reset();
 		}
 	}
 
@@ -148,7 +184,6 @@ bool Player::Update(float dt)
 	position.setX((float)x);
 	position.setY((float)y);
 
-	// Dibuja el efecto de salto si está activo
 	if (showJumpEffect)
 	{
 		SDL_Rect effectFrame = jumpEffectAnim.GetCurrentFrame();
@@ -159,14 +194,12 @@ bool Player::Update(float dt)
 		}
 	}
 
-	// Dibuja al jugador
 	SDL_Rect currentFrameRect = currentAnimation->GetCurrentFrame();
 	SDL_FlipMode flipFlag = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	int drawX = x - (PLAYER_RENDER_WIDTH / 2);
 	int drawY = y - (PLAYER_RENDER_HEIGHT / 2);
 	Engine::GetInstance().render->DrawTexture(currentTexture, drawX, drawY, &currentFrameRect, 1.0, 0.0, INT_MAX, INT_MAX, PLAYER_RENDER_WIDTH, PLAYER_RENDER_HEIGHT, flipFlag);
 
-	// Lógica de muerte y vidas
 	int mapHeight = Engine::GetInstance().map->mapData.height * Engine::GetInstance().map->mapData.tileHeight;
 	if (position.getY() > mapHeight && respawnCooldown <= 0.0f)
 	{
@@ -188,12 +221,12 @@ bool Player::Update(float dt)
 
 	return true;
 }
-
 bool Player::CleanUp()
 {
 	LOG("Cleanup player");
 	if (idleTexture) Engine::GetInstance().textures->UnLoad(idleTexture);
-	if (runTexture) Engine::GetInstance().textures->UnLoad(runTexture);
+	if (walkTexture) Engine::GetInstance().textures->UnLoad(walkTexture);
+	if (sprintTexture) Engine::GetInstance().textures->UnLoad(sprintTexture);
 	if (jumpTexture) Engine::GetInstance().textures->UnLoad(jumpTexture);
 	if (jumpEffectTexture) Engine::GetInstance().textures->UnLoad(jumpEffectTexture);
 	if (HP) Engine::GetInstance().textures->UnLoad(HP);

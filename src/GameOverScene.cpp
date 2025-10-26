@@ -4,7 +4,8 @@
 #include "Window.h"
 #include "Input.h"
 #include "Scene.h"
-
+#include "Textures.h"
+#include "Log.h"
 
 GameOverScene::GameOverScene() : Module()
 {
@@ -14,14 +15,51 @@ GameOverScene::GameOverScene() : Module()
 GameOverScene::~GameOverScene() {}
 
 bool GameOverScene::Awake() { return true; }
-bool GameOverScene::Start() { return true; }
+bool GameOverScene::Start()
+{ 
+    gameOverText = Engine::GetInstance().textures->Load("Assets/Background/Game Over_P1.png");
+
+    if (gameOverText == nullptr)
+    {
+        LOG("Failed to load Game Over texture");
+        return false;
+    }
+    return true;
+
+}
+
 
 bool GameOverScene::Update(float dt)
 {
-    // Fondo negro
     Engine::GetInstance().render->SetBackgroundColor({ 0, 0, 0, 255 });
 
-    // Si tienes función para dibujar texto, dibuja "Game Over" aquí.
+    int screenW = Engine::GetInstance().window->width;
+    int screenH = Engine::GetInstance().window->height;
+
+    if (gameOverText) {
+        int texW = 0, texH = 0;
+        Engine::GetInstance().textures->GetSize(gameOverText, texW, texH);
+
+        // Set desired size - try using a small scale factor instead
+        float scaleFactor = 0.5f; // This will make it 30% of original size
+        int desiredW = (int)(texW * scaleFactor);
+        int desiredH = (int)(texH * scaleFactor);
+
+        // Center the texture
+        int x = (screenW - desiredW) / 2;
+        int y = (screenH - desiredH) / 2;
+
+        Engine::GetInstance().render->DrawTexture(
+            gameOverText,
+            x, y,                // x, y (centered)
+            nullptr,             // srcRect (draw whole texture)
+            0.0f,                // speed (set to 0 to ignore camera)
+            0.0,                 // angle
+            0, 0,                // pivotX, pivotY (use defaults)
+            desiredW, desiredH,  // width, height (scaled down)
+            SDL_FLIP_NONE        // no flip
+        );
+    }
 
     return true;
 }

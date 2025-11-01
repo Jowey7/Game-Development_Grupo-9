@@ -27,7 +27,8 @@ public:
 	bool Update(float dt);
 	bool CleanUp();
 
-	void OnCollision(PhysBody* physA, PhysBody* physB);
+	void OnCollision(PhysBody* physA, PhysBody* physB) override; // <-- "override" AÑADIDO
+	void OnCollisionEnd(PhysBody* physA, PhysBody* physB) override; // <-- AÑADIDO
 	void Respawn();
 
 private:
@@ -58,6 +59,8 @@ public:
 
 	// Físicas y estado
 	PhysBody* pbody;
+	bool isOverlappingOneWayPlatform = false; // <-- AÑADIDO
+	PhysBody* currentOneWayPlatform = nullptr; // <-- AÑADIDO
 	float walkSpeed = 3.5f;
 	float sprintSpeed = 5.0f;
 	float jumpForce = 2.1f;

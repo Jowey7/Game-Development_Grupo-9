@@ -145,12 +145,18 @@ bool Map::Load(std::string path, std::string fileName)
 
                         // Se corrige el rango de IDs para el agua, excluyendo el tile 43.
                         bool isWater = (gid >= 38 && gid <= 42);
+                        // <-- MODIFICADO: Añadido "gid == 18" -->
+                        bool isOneWayPlatform = (gid == 7 || gid == 8 || gid == 9 || gid == 18);
 
                         Vector2D mapCoord = MapToWorld(i, j);
 
                         if (isWater) {
                             PhysBody* waterBody = Engine::GetInstance().physics.get()->CreateRectangleSensor(mapCoord.getX() + mapData.tileWidth / 2, mapCoord.getY() + mapData.tileHeight / 2, mapData.tileWidth, mapData.tileHeight, STATIC);
                             waterBody->ctype = ColliderType::WATER;
+                        }
+                        else if (isOneWayPlatform) {
+                            PhysBody* c1 = Engine::GetInstance().physics.get()->CreateRectangleSensor(mapCoord.getX() + mapData.tileWidth / 2, mapCoord.getY() + mapData.tileHeight / 2, mapData.tileWidth, mapData.tileHeight, STATIC);
+                            c1->ctype = ColliderType::ONE_WAY_PLATFORM;
                         }
                         else {
                             PhysBody* c1 = Engine::GetInstance().physics.get()->CreateRectangle(mapCoord.getX() + mapData.tileWidth / 2, mapCoord.getY() + mapData.tileHeight / 2, mapData.tileWidth, mapData.tileHeight, STATIC);

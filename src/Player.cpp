@@ -184,6 +184,41 @@ bool Player::Update(float dt)
 	position.setX((float)x);
 	position.setY((float)y);
 
+
+	// --- LÓGICA DE ATERRIZAJE EN PLATAFORMA UNIDIRECCIONAL --- // <-- AÑADIDO
+	float velY = physics->GetYVelocity(pbody);
+
+	if (isOverlappingOneWayPlatform && velY > 0 && currentOneWayPlatform != nullptr)
+	{
+		// Obtenemos la parte inferior del jugador (centro + radio)
+		int playerBottomY = y + (PLAYER_RENDER_WIDTH / 2); // Radio es 16
+
+		// Obtenemos la parte superior de la plataforma (centro - semi-altura)
+		int platformX, platformY;
+		currentOneWayPlatform->GetPosition(platformX, platformY);
+		int platformTopY = platformY - (Engine::GetInstance().map->mapData.tileHeight / 2); // Semi-altura es 16
+
+		// Si la parte inferior del jugador está en la "zona de aterrizaje"
+		// (justo encima de la plataforma, con un pequeño margen de 10px)
+		if (playerBottomY >= platformTopY && playerBottomY < (platformTopY + 10))
+		{
+			// ¡Aterrizar!
+			physics->SetYVelocity(pbody, 0.0f); // Detenemos la caída
+
+			// Ajustamos la posición del jugador para que quede exactamente encima
+			int correctedY = platformTopY - (PLAYER_RENDER_WIDTH / 2);
+			physics->SetPosition(pbody, (float)x, (float)correctedY);
+			position.setY((float)correctedY); // Actualizamos la variable de 'position' también
+
+			if (isJumping) {
+				isJumping = false;
+				SetState(PlayerState::IDLE); // Forzamos estado IDLE al aterrizar
+			}
+		}
+	}
+	// --- FIN DE LÓGICA DE ATERRIZAJE ---
+
+
 	if (showJumpEffect)
 	{
 		SDL_Rect effectFrame = jumpEffectAnim.GetCurrentFrame();
@@ -253,6 +288,11 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 		Engine::GetInstance().audio->PlayFx(pickCoinFxId);
 		physB->listener->Destroy();
 		break;
+	case ColliderType::ONE_WAY_PLATFORM: // <-- AÑADIDO
+		// El jugador está tocando el sensor
+		isOverlappingOneWayPlatform = true;
+		currentOneWayPlatform = physB;
+		break;
 	case ColliderType::WATER:
 		LOG("Collision WATER");
 		if (respawnCooldown <= 0.0f) {
@@ -261,6 +301,16 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 		break;
 	default:
 		break;
+	}
+}
+
+// <-- FUNCIÓN COMPLETA AÑADIDA -->
+void Player::OnCollisionEnd(PhysBody* physA, PhysBody* physB) {
+	if (physB->ctype == ColliderType::ONE_WAY_PLATFORM)
+	{
+		// El jugador ha dejado de tocar el sensor
+		isOverlappingOneWayPlatform = false;
+		currentOneWayPlatform = nullptr;
 	}
 }
 

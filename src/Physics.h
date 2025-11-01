@@ -27,6 +27,7 @@ enum class ColliderType {
     PLAYER,
     ITEM,
     PLATFORM,
+    ONE_WAY_PLATFORM, // <-- AÑADIDO
     ENEMY,
     WATER,
     UNKNOWN

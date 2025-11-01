@@ -10,8 +10,8 @@
 #include "EntityManager.h"
 #include "Player.h"
 #include "Map.h"
-#include "Item.h"
 #include "Physics.h"
+#include "Item.h"
 
 Scene::Scene() : Module()
 {
@@ -23,7 +23,6 @@ Scene::~Scene() {}
 bool Scene::Awake()
 {
 	LOG("Loading Scene");
-	// La creación del jugador y los ítems se ha movido a Start() para permitir el reinicio del juego.
 	return true;
 }
 
@@ -47,6 +46,15 @@ bool Scene::Start()
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer4.png"));
 	backgroundTextures.push_back(Engine::GetInstance().textures->Load("Assets/Background/B_Layer5.png"));
 
+	// --- CARGAR TEXTURA DEBUG ---
+	// NOTA: Asegúrate de que "Debug Info.png" esté en esta ruta
+	debugInfoTexture = Engine::GetInstance().textures->Load("Assets/Background/Debug Info.png");
+	if (debugInfoTexture == nullptr)
+	{
+		LOG("¡Error al cargar la textura Debug Info.png!");
+	}
+	showDebugInfo = false; // Asegurarse de que empieza oculto
+
 	Map* map = Engine::GetInstance().map.get();
 	Physics* physics = Engine::GetInstance().physics.get();
 
@@ -65,7 +73,7 @@ bool Scene::Start()
 bool Scene::PreUpdate()
 {
 	float parallaxSpeeds[] = { 0.1f, 0.25f, 0.4f, 0.6f, 0.8f };
-	int yOffsets[] = { -200, -200, -200, 40, -15 }; // <--- ﹐ODIFICA ESTOS VALORES!
+	int yOffsets[] = { -200, -200, -200, 40, -15 };
 	float scaleFactors[] = { 2.0f, 1.3f, 1.3f, 1.0f, 1.0f };
 
 	for (size_t i = 0; i < backgroundTextures.size(); ++i)
@@ -112,6 +120,27 @@ bool Scene::PostUpdate()
 
 	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_ESCAPE) == KEY_DOWN)
 		ret = false;
+
+	// --- LÓGICA DE DEBUG TOGGLE ---
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_H) == KEY_DOWN)
+	{
+		showDebugInfo = !showDebugInfo;
+	}
+
+	// --- RENDERIZADO DE DEBUG ---
+	if (showDebugInfo && debugInfoTexture != nullptr)
+	{
+		int originalW, originalH;
+		Engine::GetInstance().textures->GetSize(debugInfoTexture, originalW, originalH);
+
+		int scaledW = (int)(originalW * 0.5f); // 50% del tamaño original
+		int scaledH = (int)(originalH * 0.5f); // 50% del tamaño original
+
+		// Dibujamos la textura en (200, 0) de la pantalla.
+		// Usamos speed = 0.0f para que no se mueva con la cámara.
+		Engine::GetInstance().render->DrawTexture(debugInfoTexture, 330, 0, NULL, 0.0f, 0, INT_MAX, INT_MAX, scaledW, scaledH);
+	}
+
 
 	if (player != nullptr)
 	{
@@ -166,6 +195,13 @@ bool Scene::CleanUp()
 		Engine::GetInstance().textures->UnLoad(texture);
 	}
 	backgroundTextures.clear();
+
+	// --- LIMPIAR TEXTURA DEBUG ---
+	if (debugInfoTexture != nullptr)
+	{
+		Engine::GetInstance().textures->UnLoad(debugInfoTexture);
+		debugInfoTexture = nullptr;
+	}
 
 	return true;
 }

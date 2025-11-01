@@ -23,4 +23,8 @@ public:
 private:
 	std::shared_ptr<Player> player;
 	std::vector<SDL_Texture*> backgroundTextures;
+
+	// --- AÑADIDO PARA EL DEBUG ---
+	SDL_Texture* debugInfoTexture = nullptr;
+	bool showDebugInfo = false;
 };

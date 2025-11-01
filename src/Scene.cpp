@@ -11,7 +11,7 @@
 #include "Player.h"
 #include "Map.h"
 #include "Physics.h"
-#include "Item.h"
+#include "Item.h" // <-- Asegúrate de que este include existe
 
 Scene::Scene() : Module()
 {
@@ -126,6 +126,30 @@ bool Scene::PostUpdate()
 	{
 		showDebugInfo = !showDebugInfo;
 	}
+
+	// F9: Mostrar/Ocultar Colliders
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_F9) == KEY_DOWN)
+	{
+		Engine::GetInstance().physics->ToggleDebug();
+	}
+
+	// F10: Activar/Desactivar Modo Dios
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_F10) == KEY_DOWN)
+	{
+		if (player != nullptr)
+		{
+			player->ToggleGodMode();
+		}
+	}
+
+	// F11: Activar/Desactivar Límite de FPS (30 FPS)
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_F11) == KEY_DOWN)
+	{
+		// <-- MODIFICADO AQUÍ -->
+		Engine::GetInstance().ToggleFrameRateCap();
+	}
+	// <-- FIN DE LA MODIFICACIÓN -->
+
 
 	// --- RENDERIZADO DE DEBUG ---
 	if (showDebugInfo && debugInfoTexture != nullptr)

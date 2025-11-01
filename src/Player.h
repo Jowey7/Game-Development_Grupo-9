@@ -31,6 +31,8 @@ public:
 	void OnCollisionEnd(PhysBody* physA, PhysBody* physB) override;
 	void Respawn();
 
+	void ToggleGodMode(); // <-- AÑADIR ESTA LÍNEA
+
 private:
 	void SetState(PlayerState state);
 
@@ -73,6 +75,7 @@ public:
 	float jumpForce = 2.1f;
 	float airSpeedLimit = 0.0f;
 	bool isJumping = false; // Aún la usamos para la lógica de colisión
+	bool isGodMode = false; // <-- AÑADIR ESTA LÍNEA
 	int lives = 3;
 	Vector2D initialPosition;
 

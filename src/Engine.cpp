@@ -59,6 +59,8 @@ bool Engine::Awake() {
 	gameTitle = configFile.child("config").child("engine").child("title").child_value();
 	targetFrameRate = configFile.child("config").child("engine").child("targetFrameRate").attribute("value").as_int();
 
+	originalTargetFrameRate = targetFrameRate; // <-- AÑADIR ESTA LÍNEA
+
 	for (const auto& module : moduleList) {
 		module->LoadParameters(configFile.child("config").child(module->name.c_str()));
 		if (!module->Awake()) return false;
@@ -128,10 +130,13 @@ void Engine::PrepareUpdate() {
 
 void Engine::FinishUpdate() {
 	double currentDt = frameTime.ReadMs();
-	float maxFrameDuration = 1000.0f / targetFrameRate;
+	float maxFrameDuration = 1000.0f / targetFrameRate; // <-- targetFrameRate AHORA CAMBIA (60 o 30)
+
+	// <-- MODIFICADO: Eliminamos el 'if(fpsCapEnabled)' -->
 	if (targetFrameRate > 0 && currentDt < maxFrameDuration) {
 		SDL_Delay((Uint32)(maxFrameDuration - currentDt));
 	}
+	// <-- FIN DE LA MODIFICACIÓN -->
 
 	frameCount++;
 	secondsSinceStartup = startupTime.ReadSec();
@@ -185,4 +190,17 @@ bool Engine::LoadConfig() {
 
 void Engine::RequestSceneChange(std::shared_ptr<Module> newScene) {
 	sceneToLoad = newScene;
+}
+
+// <-- AÑADIR ESTA FUNCIÓN COMPLETA -->
+void Engine::ToggleFrameRateCap()
+{
+	if (targetFrameRate == 30)
+	{
+		targetFrameRate = originalTargetFrameRate; // (Vuelve a 60, o lo que ponga el config)
+	}
+	else
+	{
+		targetFrameRate = 30; // (Lo fija a 30)
+	}
 }

@@ -74,6 +74,7 @@ bool Player::Start() {
 	// Establecer estado inicial
 	SetState(PlayerState::IDLE);
 	isJumping = false;
+	isGodMode = false; // <-- AÑADIDO (para asegurar)
 	return true;
 }
 
@@ -225,6 +226,23 @@ void Player::DoJump()
 	jumpEffectAnim.Reset();
 }
 
+// <-- AÑADIR ESTA FUNCIÓN COMPLETA -->
+void Player::ToggleGodMode()
+{
+	isGodMode = !isGodMode;
+	if (isGodMode)
+	{
+		// Desactivar gravedad para el jugador
+		b2Body_SetGravityScale(pbody->body, 0.0f);
+	}
+	else
+	{
+		// Reactivar gravedad para el jugador
+		b2Body_SetGravityScale(pbody->body, 1.0f);
+	}
+}
+
+
 // --- FUNCIÓN UPDATE PRINCIPAL (Refactorizada) ---
 
 bool Player::Update(float dt)
@@ -233,27 +251,48 @@ bool Player::Update(float dt)
 
 	Physics* physics = Engine::GetInstance().physics.get();
 
+	// <-- MODIFICADO: Añadido chequeo de God Mode -->
 	// --- 1. GESTIONAR LÓGICA DE ESTADO ---
-	// Llamar a la función apropiada según el estado actual
-	switch (currentState)
+	if (isGodMode)
 	{
-	case PlayerState::IDLE:
-		HandleIdle(dt);
-		break;
-	case PlayerState::WALK:
-		HandleWalk(dt);
-		break;
-	case PlayerState::SPRINT:
-		HandleSprint(dt);
-		break;
-	case PlayerState::JUMP:
-		HandleJump(dt);
-		break;
-	}
+		// Lógica de vuelo libre (W/A/S/D)
+		float godSpeed = 7.0f;
+		desiredVelX = 0.0f;
+		float desiredVelY = 0.0f;
 
-	// --- 2. APLICAR FÍSICAS ---
-	// 'desiredVelX' ha sido establecido por la función de estado
-	physics->SetXVelocity(pbody, desiredVelX);
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_W) == KEY_REPEAT) desiredVelY = -godSpeed;
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_S) == KEY_REPEAT) desiredVelY = godSpeed;
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT) desiredVelX = -godSpeed;
+		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT) desiredVelX = godSpeed;
+
+		physics->SetLinearVelocity(pbody, desiredVelX, desiredVelY);
+		SetState(PlayerState::IDLE); // Usar anim IDLE
+	}
+	else
+	{
+		// Lógica FSM Normal (si no estamos en Modo Dios)
+		switch (currentState)
+		{
+		case PlayerState::IDLE:
+			HandleIdle(dt);
+			break;
+		case PlayerState::WALK:
+			HandleWalk(dt);
+			break;
+		case PlayerState::SPRINT:
+			HandleSprint(dt);
+			break;
+		case PlayerState::JUMP:
+			HandleJump(dt);
+			break;
+		}
+
+		// --- 2. APLICAR FÍSICAS ---
+		// 'desiredVelX' ha sido establecido por la función de estado
+		physics->SetXVelocity(pbody, desiredVelX);
+	}
+	// <-- FIN DE LA MODIFICACIÓN DE GOD MODE -->
+
 
 	// --- 3. ACTUALIZAR POSICIÓN Y RENDER ---
 	int x, y;
@@ -305,7 +344,9 @@ bool Player::Update(float dt)
 
 	// --- 7. COMPROBAR MUERTE / RESPAWN ---
 	int mapHeight = Engine::GetInstance().map->mapData.height * Engine::GetInstance().map->mapData.tileHeight;
-	if (position.getY() > mapHeight && respawnCooldown <= 0.0f)
+
+	// <-- MODIFICADO: Añadido !isGodMode -->
+	if (position.getY() > mapHeight && respawnCooldown <= 0.0f && !isGodMode)
 	{
 		Respawn();
 	}
@@ -364,6 +405,9 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 		currentOneWayPlatform = physB;
 		break;
 	case ColliderType::WATER:
+		// <-- MODIFICADO: Añadido chequeo de God Mode -->
+		if (isGodMode) break; // Si somos Dios, ignoramos el agua
+
 		LOG("Collision WATER");
 		if (respawnCooldown <= 0.0f) {
 			Respawn();

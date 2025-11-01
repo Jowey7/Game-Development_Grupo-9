@@ -33,6 +33,8 @@ public:
 	// Renombramos la función para que solo solicite el cambio
 	void RequestSceneChange(std::shared_ptr<Module> newScene);
 
+	void ToggleFrameRateCap(); // <-- AÑADIR ESTA LÍNEA
+
 	float GetDt() const { return dt; }
 
 private:
@@ -64,6 +66,8 @@ public:
 	std::shared_ptr<Map> map;
 	std::shared_ptr<Physics> physics;
 
+	// bool fpsCapEnabled = true; // <-- ELIMINAR ESTA LÍNEA (de la solución anterior)
+
 private:
 	std::shared_ptr<Module> currentScene;
 	std::shared_ptr<Module> sceneToLoad = nullptr; // Variable para la escena solicitada
@@ -79,6 +83,7 @@ private:
 	float averageFps = 0.0f;
 	int secondsSinceStartup = 0;
 	int targetFrameRate = 60;
+	int originalTargetFrameRate = 60; // <-- AÑADIR ESTA LÍNEA
 	std::string gameTitle = "Platformer Game";
 	pugi::xml_document configFile;
 };

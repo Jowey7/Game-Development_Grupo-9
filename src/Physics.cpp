@@ -22,6 +22,7 @@ Physics::~Physics()
 
 bool Physics::Start()
 {
+    // ... (Start sin cambios)
     LOG("Creating Physics 2D environment");
 
     b2WorldDef wdef = b2DefaultWorldDef();
@@ -34,6 +35,7 @@ bool Physics::Start()
 
 bool Physics::PreUpdate()
 {
+    // ... (PreUpdate sin cambios)
     bool ret = true;
 
     float dt = Engine::GetInstance().GetDt() / 1000.0f;
@@ -73,6 +75,7 @@ bool Physics::PreUpdate()
 
 PhysBody* Physics::CreateRectangle(int x, int y, int width, int height, bodyType type)
 {
+    // ... (CreateRectangle sin cambios)
     b2BodyDef def = b2DefaultBodyDef();
     def.type = ToB2Type(type);
     def.position = { PIXEL_TO_METERS(x), PIXEL_TO_METERS(y) };
@@ -96,6 +99,7 @@ PhysBody* Physics::CreateRectangle(int x, int y, int width, int height, bodyType
 
 PhysBody* Physics::CreateCircle(int x, int y, int radious, bodyType type)
 {
+    // ... (CreateCircle sin cambios)
     b2BodyDef def = b2DefaultBodyDef();
     def.type = ToB2Type(type);
     def.position = { PIXEL_TO_METERS(x), PIXEL_TO_METERS(y) };
@@ -120,6 +124,7 @@ PhysBody* Physics::CreateCircle(int x, int y, int radious, bodyType type)
 
 PhysBody* Physics::CreateRectangleSensor(int x, int y, int width, int height, bodyType type)
 {
+    // ... (CreateRectangleSensor sin cambios)
     b2BodyDef def = b2DefaultBodyDef();
     def.type = ToB2Type(type);
     def.position = { PIXEL_TO_METERS(x), PIXEL_TO_METERS(y) };
@@ -143,6 +148,7 @@ PhysBody* Physics::CreateRectangleSensor(int x, int y, int width, int height, bo
 
 PhysBody* Physics::CreateChain(int x, int y, int* points, int size, bodyType type)
 {
+    // ... (CreateChain sin cambios)
     b2BodyDef def = b2DefaultBodyDef();
     def.type = ToB2Type(type);
     def.position = { PIXEL_TO_METERS(x), PIXEL_TO_METERS(y) };
@@ -174,11 +180,13 @@ bool Physics::PostUpdate()
 {
     bool ret = true;
 
-    if (Engine::GetInstance().input.get()->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
-        debug = !debug;
+    // <-- MODIFICADO: Se elimina la comprobación de F1 -->
+    // if (Engine::GetInstance().input.get()->GetKey(SDL_SCANCODE_F1) == KEY_DOWN)
+    //     debug = !debug;
 
     if (debug)
     {
+        // ... (resto de PostUpdate sin cambios)
         if (B2_IS_NULL(world) == false)
         {
             b2DebugDraw dd = {};
@@ -212,6 +220,7 @@ bool Physics::PostUpdate()
 
 bool Physics::CleanUp()
 {
+    // ... (CleanUp sin cambios)
     LOG("Destroying physics world");
 
     if (!B2_IS_NULL(world))
@@ -225,6 +234,7 @@ bool Physics::CleanUp()
 
 void Physics::BeginContact(b2ShapeId shapeA, b2ShapeId shapeB)
 {
+    // ... (BeginContact sin cambios)
     if (!b2Shape_IsValid(shapeA) || !b2Shape_IsValid(shapeB)) return;
 
     b2BodyId bodyA = b2Shape_GetBody(shapeA);
@@ -241,6 +251,7 @@ void Physics::BeginContact(b2ShapeId shapeA, b2ShapeId shapeB)
 
 void Physics::EndContact(b2ShapeId shapeA, b2ShapeId shapeB)
 {
+    // ... (EndContact sin cambios)
     if (!b2Shape_IsValid(shapeA) || !b2Shape_IsValid(shapeB)) return;
 
     b2BodyId bodyA = b2Shape_GetBody(shapeA);
@@ -258,6 +269,7 @@ void Physics::EndContact(b2ShapeId shapeA, b2ShapeId shapeB)
 
 void Physics::DeletePhysBody(PhysBody* physBody)
 {
+    // ... (DeletePhysBody sin cambios)
     if (B2_IS_NULL(world)) return;
     if (physBody && !B2_IS_NULL(physBody->body))
     {
@@ -267,6 +279,7 @@ void Physics::DeletePhysBody(PhysBody* physBody)
 }
 
 bool Physics::IsPendingToDelete(PhysBody* physBody) {
+    // ... (IsPendingToDelete sin cambios)
     bool pendingToDelete = false;
     for (PhysBody* _physBody : bodiesToDelete) {
         if (_physBody == physBody) {
@@ -277,6 +290,7 @@ bool Physics::IsPendingToDelete(PhysBody* physBody) {
     return pendingToDelete;
 }
 
+// ... (GetLinearVelocity y demás funciones de físicas sin cambios)
 b2Vec2 Physics::GetLinearVelocity(const PhysBody* p) const { return b2Body_GetLinearVelocity(p->body); }
 float Physics::GetXVelocity(const PhysBody* p) const { return b2Body_GetLinearVelocity(p->body).x; }
 float Physics::GetYVelocity(const PhysBody* p) const { return b2Body_GetLinearVelocity(p->body).y; }

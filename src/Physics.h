@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Module.h"
 #include "Entity.h"
 #include <list>
@@ -27,7 +27,7 @@ enum class ColliderType {
     PLAYER,
     ITEM,
     PLATFORM,
-    ONE_WAY_PLATFORM, // <-- A�ADIDO
+    ONE_WAY_PLATFORM, // <-- AŃADIDO
     ENEMY,
     WATER,
     UNKNOWN
@@ -84,6 +84,8 @@ public:
     void   ApplyLinearImpulseToCenter(PhysBody* p, float ix, float iy, bool wake = true) const;
 
     void SetPosition(PhysBody* p, float x, float y) const;
+
+    void ToggleDebug() { debug = !debug; } // <-- AÑADIR ESTA LÍNEA
 
 private:
     static b2BodyType ToB2Type(bodyType t);

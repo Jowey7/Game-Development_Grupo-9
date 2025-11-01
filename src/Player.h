@@ -24,15 +24,22 @@ public:
 
 	bool Awake();
 	bool Start();
-	bool Update(float dt);
+	bool Update(float dt); // <-- Esta será ahora el "gestor" de estados
 	bool CleanUp();
 
-	void OnCollision(PhysBody* physA, PhysBody* physB) override; // <-- "override" AÑADIDO
-	void OnCollisionEnd(PhysBody* physA, PhysBody* physB) override; // <-- AÑADIDO
+	void OnCollision(PhysBody* physA, PhysBody* physB) override;
+	void OnCollisionEnd(PhysBody* physA, PhysBody* physB) override;
 	void Respawn();
 
 private:
 	void SetState(PlayerState state);
+
+	// --- Funciones de la Máquina de Estados ---
+	void HandleIdle(float dt);
+	void HandleWalk(float dt);
+	void HandleSprint(float dt);
+	void HandleJump(float dt);
+	void DoJump(); // Función de ayuda para el salto
 
 public:
 	PlayerState currentState;
@@ -59,15 +66,18 @@ public:
 
 	// Físicas y estado
 	PhysBody* pbody;
-	bool isOverlappingOneWayPlatform = false; // <-- AÑADIDO
-	PhysBody* currentOneWayPlatform = nullptr; // <-- AÑADIDO
+	bool isOverlappingOneWayPlatform = false;
+	PhysBody* currentOneWayPlatform = nullptr;
 	float walkSpeed = 3.5f;
 	float sprintSpeed = 5.0f;
 	float jumpForce = 2.1f;
 	float airSpeedLimit = 0.0f;
-	bool isJumping = false;
+	bool isJumping = false; // Aún la usamos para la lógica de colisión
 	int lives = 3;
 	Vector2D initialPosition;
+
+	// --- Variables miembro para la lógica de estado ---
+	float desiredVelX = 0.0f; // <-- Se convierte en variable miembro
 
 	// Fx de audio
 	int pickCoinFxId;

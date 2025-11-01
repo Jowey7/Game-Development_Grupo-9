@@ -39,7 +39,6 @@ bool Player::Start() {
 	HP = Engine::GetInstance().textures->Load("Assets/Objects/HP.png");
 
 	// --- Configuración de Animaciones ---
-
 	// IDLE (4 frames de 32x32)
 	for (int i = 0; i < 4; ++i) idleAnim.frames.push_back({ i * 32, 0, 32, 32 });
 	idleAnim.speed = 0.1f;
@@ -65,8 +64,6 @@ bool Player::Start() {
 	jumpEffectAnim.speed = 0.2f;
 	jumpEffectAnim.loop = false;
 
-	SetState(PlayerState::IDLE);
-
 	pbody = Engine::GetInstance().physics->CreateCircle((int)position.getX(), (int)position.getY(), PLAYER_RENDER_WIDTH / 2, bodyType::DYNAMIC);
 	pbody->listener = this;
 	pbody->ctype = ColliderType::PLAYER;
@@ -74,6 +71,9 @@ bool Player::Start() {
 
 	pickCoinFxId = Engine::GetInstance().audio->LoadFx("Assets/Audio/Fx/coin-collision-sound-342335.wav");
 
+	// Establecer estado inicial
+	SetState(PlayerState::IDLE);
+	isJumping = false;
 	return true;
 }
 
@@ -104,121 +104,188 @@ void Player::SetState(PlayerState state)
 	}
 }
 
+// --- FUNCIONES DE LA MÁQUINA DE ESTADOS (Implementación) ---
+
+void Player::HandleIdle(float dt)
+{
+	desiredVelX = 0.0f;
+
+	// Comprobar salto
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	{
+		airSpeedLimit = walkSpeed; // Saltar con velocidad de caminata si estamos quietos
+		DoJump();
+		return; // El estado ha cambiado, salimos
+	}
+
+	// Comprobar movimiento
+	bool isSprinting = (Engine::GetInstance().input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_REPEAT);
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+	{
+		SetState(isSprinting ? PlayerState::SPRINT : PlayerState::WALK);
+	}
+}
+
+void Player::HandleWalk(float dt)
+{
+	bool isSprinting = (Engine::GetInstance().input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_REPEAT);
+
+	// Comprobar salto
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	{
+		airSpeedLimit = walkSpeed;
+		DoJump();
+		return; // El estado ha cambiado, salimos
+	}
+
+	// Comprobar cambio de estado (Sprint o Parado)
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
+	{
+		desiredVelX = -walkSpeed;
+		flip = true;
+		if (isSprinting) SetState(PlayerState::SPRINT);
+	}
+	else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+	{
+		desiredVelX = walkSpeed;
+		flip = false;
+		if (isSprinting) SetState(PlayerState::SPRINT);
+	}
+	else
+	{
+		// No hay input de movimiento, volvemos a IDLE
+		SetState(PlayerState::IDLE);
+	}
+}
+
+void Player::HandleSprint(float dt)
+{
+	bool isSprinting = (Engine::GetInstance().input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_REPEAT);
+
+	// Comprobar salto
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
+	{
+		airSpeedLimit = sprintSpeed;
+		DoJump();
+		return; // El estado ha cambiado, salimos
+	}
+
+	// Comprobar cambio de estado (Walk o Parado)
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
+	{
+		desiredVelX = -sprintSpeed;
+		flip = true;
+		if (!isSprinting) SetState(PlayerState::WALK);
+	}
+	else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+	{
+		desiredVelX = sprintSpeed;
+		flip = false;
+		if (!isSprinting) SetState(PlayerState::WALK);
+	}
+	else
+	{
+		// No hay input de movimiento, volvemos a IDLE
+		SetState(PlayerState::IDLE);
+	}
+}
+
+void Player::HandleJump(float dt)
+{
+	// 'isJumping' se pondrá a 'false' y el estado a 'IDLE' 
+	// desde OnCollision o la lógica de plataformas áereas.
+
+	// Manejar control en el aire
+	if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
+	{
+		desiredVelX = -airSpeedLimit;
+		flip = true;
+	}
+	else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
+	{
+		desiredVelX = airSpeedLimit;
+		flip = false;
+	}
+	else
+	{
+		desiredVelX = 0.0f; // Sin control en el aire si no se pulsa nada
+	}
+}
+
+void Player::DoJump()
+{
+	Engine::GetInstance().physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
+	isJumping = true; // Necesario para la lógica de OnCollision
+	SetState(PlayerState::JUMP);
+
+	// Activar y posicionar el efecto de salto
+	showJumpEffect = true;
+	jumpEffectPosition.setX(position.getX() - (PLAYER_RENDER_WIDTH / 2));
+	jumpEffectPosition.setY(position.getY() + (PLAYER_RENDER_HEIGHT / 2) - 32);
+	jumpEffectAnim.Reset();
+}
+
+// --- FUNCIÓN UPDATE PRINCIPAL (Refactorizada) ---
+
 bool Player::Update(float dt)
 {
 	if (respawnCooldown > 0.0f) respawnCooldown -= dt / 1000.0f;
 
 	Physics* physics = Engine::GetInstance().physics.get();
-	float desiredVelX = 0.0f;
 
-	// --- LÓGICA DE MOVIMIENTO ---
-
-	if (isJumping)
+	// --- 1. GESTIONAR LÓGICA DE ESTADO ---
+	// Llamar a la función apropiada según el estado actual
+	switch (currentState)
 	{
-		// 1. EL JUGADOR ESTÁ EN EL AIRE
-		SetState(PlayerState::JUMP);
-
-		// Lee el input horizontal, pero la velocidad está limitada por airSpeedLimit
-		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
-		{
-			desiredVelX = -airSpeedLimit;
-			flip = true;
-		}
-		else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
-		{
-			desiredVelX = airSpeedLimit;
-			flip = false;
-		}
-	}
-	else
-	{
-		// 2. EL JUGADOR ESTÁ EN EL SUELO
-		bool isSprinting = (Engine::GetInstance().input->GetKey(SDL_SCANCODE_LSHIFT) == KEY_REPEAT || Engine::GetInstance().input->GetKey(SDL_SCANCODE_RSHIFT) == KEY_REPEAT);
-		bool isMoving = false;
-
-		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_A) == KEY_REPEAT)
-		{
-			desiredVelX = isSprinting ? -sprintSpeed : -walkSpeed;
-			flip = true;
-			isMoving = true;
-		}
-		else if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_D) == KEY_REPEAT)
-		{
-			desiredVelX = isSprinting ? sprintSpeed : walkSpeed;
-			flip = false;
-			isMoving = true;
-		}
-
-		// Establecer estado en el suelo
-		if (isMoving)
-		{
-			SetState(isSprinting ? PlayerState::SPRINT : PlayerState::WALK);
-		}
-		else
-		{
-			SetState(PlayerState::IDLE);
-		}
-
-		// Comprobar si salta
-		if (Engine::GetInstance().input->GetKey(SDL_SCANCODE_SPACE) == KEY_DOWN)
-		{
-			// Guarda la velocidad máxima que tendrá en el aire
-			airSpeedLimit = isMoving ? (isSprinting ? sprintSpeed : walkSpeed) : walkSpeed;
-
-			physics->ApplyLinearImpulseToCenter(pbody, 0.0f, -jumpForce, true);
-			isJumping = true;
-			SetState(PlayerState::JUMP);
-			// Activa y posiciona el efecto de salto
-			showJumpEffect = true;
-			jumpEffectPosition.setX(position.getX() - (PLAYER_RENDER_WIDTH / 2));
-			jumpEffectPosition.setY(position.getY() + (PLAYER_RENDER_HEIGHT / 2) - 32);
-			jumpEffectAnim.Reset();
-		}
+	case PlayerState::IDLE:
+		HandleIdle(dt);
+		break;
+	case PlayerState::WALK:
+		HandleWalk(dt);
+		break;
+	case PlayerState::SPRINT:
+		HandleSprint(dt);
+		break;
+	case PlayerState::JUMP:
+		HandleJump(dt);
+		break;
 	}
 
+	// --- 2. APLICAR FÍSICAS ---
+	// 'desiredVelX' ha sido establecido por la función de estado
 	physics->SetXVelocity(pbody, desiredVelX);
 
-	// --- ACTUALIZACIÓN Y RENDERIZADO ---
+	// --- 3. ACTUALIZAR POSICIÓN Y RENDER ---
 	int x, y;
 	pbody->GetPosition(x, y);
 	position.setX((float)x);
 	position.setY((float)y);
 
-
-	// --- LÓGICA DE ATERRIZAJE EN PLATAFORMA UNIDIRECCIONAL --- // <-- AÑADIDO
+	// --- 4. LÓGICA DE PLATAFORMAS ATRAVESABLES ---
+	// (Esto se queda aquí, ya que es una comprobación de física post-movimiento)
 	float velY = physics->GetYVelocity(pbody);
-
 	if (isOverlappingOneWayPlatform && velY > 0 && currentOneWayPlatform != nullptr)
 	{
-		// Obtenemos la parte inferior del jugador (centro + radio)
-		int playerBottomY = y + (PLAYER_RENDER_WIDTH / 2); // Radio es 16
-
-		// Obtenemos la parte superior de la plataforma (centro - semi-altura)
+		int playerBottomY = y + (PLAYER_RENDER_WIDTH / 2); // Radio
 		int platformX, platformY;
 		currentOneWayPlatform->GetPosition(platformX, platformY);
-		int platformTopY = platformY - (Engine::GetInstance().map->mapData.tileHeight / 2); // Semi-altura es 16
+		int platformTopY = platformY - (Engine::GetInstance().map->mapData.tileHeight / 2); // Semi-altura
 
-		// Si la parte inferior del jugador está en la "zona de aterrizaje"
-		// (justo encima de la plataforma, con un pequeño margen de 10px)
 		if (playerBottomY >= platformTopY && playerBottomY < (platformTopY + 10))
 		{
-			// ¡Aterrizar!
-			physics->SetYVelocity(pbody, 0.0f); // Detenemos la caída
-
-			// Ajustamos la posición del jugador para que quede exactamente encima
+			physics->SetYVelocity(pbody, 0.0f);
 			int correctedY = platformTopY - (PLAYER_RENDER_WIDTH / 2);
 			physics->SetPosition(pbody, (float)x, (float)correctedY);
-			position.setY((float)correctedY); // Actualizamos la variable de 'position' también
+			position.setY((float)correctedY);
 
 			if (isJumping) {
 				isJumping = false;
-				SetState(PlayerState::IDLE); // Forzamos estado IDLE al aterrizar
+				SetState(PlayerState::IDLE);
 			}
 		}
 	}
-	// --- FIN DE LÓGICA DE ATERRIZAJE ---
 
-
+	// --- 5. RENDERIZAR EFECTO DE SALTO ---
 	if (showJumpEffect)
 	{
 		SDL_Rect effectFrame = jumpEffectAnim.GetCurrentFrame();
@@ -229,18 +296,21 @@ bool Player::Update(float dt)
 		}
 	}
 
+	// --- 6. RENDERIZAR JUGADOR ---
 	SDL_Rect currentFrameRect = currentAnimation->GetCurrentFrame();
 	SDL_FlipMode flipFlag = flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
 	int drawX = x - (PLAYER_RENDER_WIDTH / 2);
 	int drawY = y - (PLAYER_RENDER_HEIGHT / 2);
 	Engine::GetInstance().render->DrawTexture(currentTexture, drawX, drawY, &currentFrameRect, 1.0, 0.0, INT_MAX, INT_MAX, PLAYER_RENDER_WIDTH, PLAYER_RENDER_HEIGHT, flipFlag);
 
+	// --- 7. COMPROBAR MUERTE / RESPAWN ---
 	int mapHeight = Engine::GetInstance().map->mapData.height * Engine::GetInstance().map->mapData.tileHeight;
 	if (position.getY() > mapHeight && respawnCooldown <= 0.0f)
 	{
 		Respawn();
 	}
 
+	// --- 8. RENDERIZAR UI (VIDAS) ---
 	int spacing = 5;
 	int startX = 20;
 	int startY = 20;
@@ -256,6 +326,7 @@ bool Player::Update(float dt)
 
 	return true;
 }
+
 bool Player::CleanUp()
 {
 	LOG("Cleanup player");
@@ -277,7 +348,7 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 	switch (physB->ctype)
 	{
 	case ColliderType::PLATFORM:
-		if (isJumping)
+		if (isJumping) // Solo nos importa al aterrizar
 		{
 			isJumping = false;
 			SetState(PlayerState::IDLE);
@@ -288,8 +359,7 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 		Engine::GetInstance().audio->PlayFx(pickCoinFxId);
 		physB->listener->Destroy();
 		break;
-	case ColliderType::ONE_WAY_PLATFORM: // <-- AÑADIDO
-		// El jugador está tocando el sensor
+	case ColliderType::ONE_WAY_PLATFORM:
 		isOverlappingOneWayPlatform = true;
 		currentOneWayPlatform = physB;
 		break;
@@ -304,11 +374,9 @@ void Player::OnCollision(PhysBody* physA, PhysBody* physB) {
 	}
 }
 
-// <-- FUNCIÓN COMPLETA AÑADIDA -->
 void Player::OnCollisionEnd(PhysBody* physA, PhysBody* physB) {
 	if (physB->ctype == ColliderType::ONE_WAY_PLATFORM)
 	{
-		// El jugador ha dejado de tocar el sensor
 		isOverlappingOneWayPlatform = false;
 		currentOneWayPlatform = nullptr;
 	}
